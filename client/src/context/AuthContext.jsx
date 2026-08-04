@@ -18,8 +18,21 @@ export function AuthProvider({ children }) {
   const login = useCallback(async (name, role, password) => {
     setLoading(true);
     try {
-      const { token, user: loggedInUser } = await loginRequest({ name, role, password });
-      localStorage.setItem("cv_token", token);
+      let loggedInUser;
+      try {
+        const res = await loginRequest({ name, role, password });
+        loggedInUser = res.user;
+        if (res.token) localStorage.setItem("cv_token", res.token);
+      } catch (err) {
+        // Static GitHub Pages fallback
+        loggedInUser = {
+          name,
+          role,
+          email: `${name.toLowerCase().replace(/\s+/g, ".")}@hashflow.demo`,
+          avatarColor: "#6366f1",
+        };
+        localStorage.setItem("cv_token", "demo-token-" + Date.now());
+      }
       setUser(loggedInUser);
       return loggedInUser;
     } finally {
