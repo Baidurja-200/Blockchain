@@ -12,8 +12,12 @@ export const fraudSummary = () =>
     .then((r) => r.data)
     .catch(() => ({
       totalFlagged: 1,
+      avgScore: 85,
       avgFraudScore: 85,
+      high: 1,
       highRiskCount: 1,
+      medium: 0,
       mediumRiskCount: 0,
+      low: 2,
       lowRiskCount: 2,
     }));

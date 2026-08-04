@@ -35,18 +35,20 @@ export default function Invoices() {
     setLoading(true);
     Promise.all([listInvoices(), listPOs(), listGRNs()])
       .then(([i, p, g]) => {
-        setInvoices(i);
-        setPOs(p);
-        setGrns(g);
+        setInvoices(i || []);
+        setPOs(p || []);
+        setGrns(g || []);
       })
+      .catch(() => {})
       .finally(() => setLoading(false));
   };
 
   useEffect(load, []);
 
-  const filtered = tab === "All" ? invoices : invoices.filter((i) => i.status === tab);
-  const availableGrns = grns.filter((g) => g.poNumber === form.poNumber);
-  const selectedPO = pos.find((p) => p.poNumber === form.poNumber);
+  const safeInvoices = invoices || [];
+  const filtered = tab === "All" ? safeInvoices : safeInvoices.filter((i) => i?.status === tab);
+  const availableGrns = (grns || []).filter((g) => g?.poNumber === form.poNumber);
+  const selectedPO = (pos || []).find((p) => p?.poNumber === form.poNumber);
 
   const handleUpload = async (e) => {
     e.preventDefault();

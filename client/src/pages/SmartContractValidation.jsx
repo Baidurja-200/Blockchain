@@ -27,18 +27,21 @@ export default function SmartContractValidation() {
   useEffect(() => {
     listInvoices()
       .then((data) => {
-        setInvoices(data);
-        if (data.length) setSelectedId(data[0]._id);
+        const safeData = data || [];
+        setInvoices(safeData);
+        if (safeData.length) setSelectedId(safeData[0]._id);
       })
+      .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
 
-  const invoice = invoices.find((i) => i._id === selectedId);
+  const safeInvoices = invoices || [];
+  const invoice = safeInvoices.find((i) => i?._id === selectedId);
 
   const steps = invoice
     ? [
         { key: "submitted", label: "Invoice Submitted", passed: true, detail: `${invoice.invoiceNumber} received from ${invoice.vendor}` },
-        ...invoice.validation.steps,
+        ...(invoice.validation?.steps || []),
       ]
     : [];
 
