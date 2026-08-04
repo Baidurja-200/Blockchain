@@ -1,0 +1,15 @@
+node_modules/
+dist/
+build/
+.env
+.env.local
+*.log
+coverage/
+blockchain/artifacts/
+blockchain/cache/
+blockchain/typechain-types/
+server/uploads/*
+!server/uploads/.gitkeep
+.DS_Store
+.claude/
+.gemini/

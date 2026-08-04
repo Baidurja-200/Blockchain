@@ -1,0 +1,25 @@
+{
+  "name": "hashflow-three-way-invoice",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Blockchain-Based Three-Way Invoice Verification System (PO / GRN / Invoice)",
+  "workspaces": [
+    "client",
+    "server",
+    "blockchain"
+  ],
+  "scripts": {
+    "install:all": "npm install && npm --prefix server install && npm --prefix client install",
+    "dev": "concurrently -n SERVER,CLIENT -c magenta,cyan \"npm:dev:server\" \"npm:dev:client\"",
+    "dev:server": "npm --prefix server run dev",
+    "dev:client": "npm --prefix client run dev",
+    "seed": "npm --prefix server run seed",
+    "build": "npm --prefix client run build",
+    "chain:compile": "npm --prefix blockchain run compile",
+    "chain:node": "npm --prefix blockchain run node",
+    "chain:deploy": "npm --prefix blockchain run deploy"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}
