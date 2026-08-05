@@ -109,7 +109,11 @@ contract ThreeWayMatch {
     ) external {
         bytes32 grnKey = _key(grnNumber);
         require(!goodsReceipts[grnKey].exists, "ThreeWayMatch: GRN already exists");
-        require(purchaseOrders[_key(poNumber)].exists, "ThreeWayMatch: PO not found");
+
+        bytes32 poKey = _key(poNumber);
+        PurchaseOrder memory po = purchaseOrders[poKey];
+        require(po.exists, "ThreeWayMatch: PO not found");
+        require(quantityReceived <= po.quantity, "ThreeWayMatch: Received quantity exceeds PO ordered quantity");
 
         goodsReceipts[grnKey] = GoodsReceipt(grnNumber, poNumber, quantityReceived, true);
         emit GoodsReceiptRecorded(grnNumber, poNumber, quantityReceived, block.timestamp);

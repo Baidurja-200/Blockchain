@@ -56,10 +56,21 @@ export async function createGRN(req, res, next) {
     const overReceiptBy = isOverReceipt ? qty - Math.max(remaining, 0) : 0;
 
     if (isOverReceipt) {
-      monitorBus.warning(
-        `Over-receipt detected — ${poNumber} ordered ${po.quantity}, already received ${alreadyReceived}, now receiving ${qty} (${overReceiptBy} over)`,
+      monitorBus.error(
+        `Over-receipt rejected on-chain — ${poNumber} ordered ${po.quantity}, already received ${alreadyReceived}, attempt to receive ${qty} (${overReceiptBy} over)`,
         { referenceId: poNumber }
       );
+
+      const block = await mineBlock({
+        transactionType: "GRN_REJECTED",
+        referenceId: poNumber,
+        endpoint: `/api/grns`,
+        data: { poNumber, quantityReceived: qty, poQuantity: po.quantity, alreadyReceived, reason: "Over-receipt restriction" },
+      });
+
+      return res.status(422).json({
+        message: `Blockchain Validation Error: Transaction Restricted. Receiving ${qty} units exceeds remaining PO quantity (${remaining} units remaining of ${po.quantity} ordered). Smart contract rejected this transaction (Mined Block #${block.blockNumber}).`,
+      });
     }
 
     const grnNumber = req.body.grnNumber?.trim() || nextGrnNumber();
