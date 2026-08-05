@@ -4,6 +4,7 @@ import { Terminal, Trash2, Wifi, WifiOff, Activity, ShieldCheck, Globe } from "l
 import PageHeader from "../components/ui/PageHeader";
 import useMonitorStream from "../hooks/useMonitorStream";
 import { useAuth } from "../context/AuthContext";
+import api from "../services/api";
 import { fetchGlobalLedger, getActiveSessions } from "../services/cloudLedgerService";
 
 const LEVEL_STYLES = {
@@ -37,10 +38,35 @@ export default function BackendMonitor() {
   }, [logs, autoScroll]);
 
   useEffect(() => {
+    const mergeSessions = (incoming) => {
+      if (!incoming || typeof incoming !== "object") return;
+      setActiveSessions((prev) => {
+        const merged = { ...prev };
+        const now = Date.now();
+
+        // Clean stale (> 15 mins)
+        Object.keys(merged).forEach((id) => {
+          if (merged[id]?.lastActive && now - new Date(merged[id].lastActive).getTime() > 900000) {
+            delete merged[id];
+          }
+        });
+
+        // Union merge incoming
+        Object.entries(incoming).forEach(([id, s]) => {
+          if (s && s.name) {
+            const key = s.sessionId || `${s.name}-${s.role}`.toLowerCase();
+            merged[key] = { ...merged[key], ...s, lastActive: s.lastActive || new Date().toISOString() };
+          }
+        });
+
+        return merged;
+      });
+    };
+
     // 1. Listen to instant WebSocket session updates
     const handleSocketSessions = (e) => {
       if (e.detail && Object.keys(e.detail).length > 0) {
-        setActiveSessions(e.detail);
+        mergeSessions(e.detail);
       }
     };
     window.addEventListener("hashflow_socket_sessions", handleSocketSessions);
@@ -49,36 +75,33 @@ export default function BackendMonitor() {
     const handleCloudSync = (e) => {
       const sessions = e.detail?.sessions || e.detail?.cloud?.sessions;
       if (sessions && Object.keys(sessions).length > 0) {
-        setActiveSessions(sessions);
+        mergeSessions(sessions);
       }
     };
     window.addEventListener("hashflow_cloud_sync", handleCloudSync);
 
-    // 3. Also fetch directly from server REST API fallback
+    // 3. Fetch from backend REST API
     const updatePeers = async () => {
       try {
-        const res = await fetch("/api/monitor/sessions");
-        if (res.ok) {
-          const json = await res.json();
-          if (json.sessions && Object.keys(json.sessions).length > 0) {
-            setActiveSessions(json.sessions);
-            return;
-          }
+        const res = await api.get("/monitor/sessions");
+        if (res.data?.sessions && Object.keys(res.data.sessions).length > 0) {
+          mergeSessions(res.data.sessions);
+          return;
         }
       } catch (_e) {}
 
       const data = await fetchGlobalLedger();
       if (data && data.sessions && Object.keys(data.sessions).length > 0) {
-        setActiveSessions(data.sessions);
+        mergeSessions(data.sessions);
       } else {
         const cached = getActiveSessions();
         if (cached && Object.keys(cached).length > 0) {
-          setActiveSessions(cached);
+          mergeSessions(cached);
         }
       }
     };
     updatePeers();
-    const timer = setInterval(updatePeers, 5000);
+    const timer = setInterval(updatePeers, 6000);
 
     return () => {
       window.removeEventListener("hashflow_socket_sessions", handleSocketSessions);
