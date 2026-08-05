@@ -79,79 +79,10 @@ export async function createPO(req, res, next) {
   }
 }
 
-export async function updatePO(req, res, next) {
-  try {
-    const po = await PurchaseOrder.findById(req.params.id);
-    if (!po) return res.status(404).json({ message: "Purchase order not found" });
-
-    // A PO that has already been billed against must not be silently
-    // re-priced — that is exactly the "modified PO" fraud this system exists
-    // to prevent. Once an invoice references it, only cancellation is allowed.
-    const linkedInvoices = await Invoice.countDocuments({ poNumber: po.poNumber });
-    const onlyCancelling = Object.keys(req.body).every((k) => k === "status") && req.body.status === "Cancelled";
-    if (linkedInvoices > 0 && !onlyCancelling) {
-      monitorBus.error(`PO ${po.poNumber} edit blocked — ${linkedInvoices} invoice(s) already reference it`, {
-        referenceId: po.poNumber,
-      });
-      return res.status(409).json({
-        message: `${po.poNumber} already has ${linkedInvoices} invoice(s) raised against it and can no longer be edited. This protects the audit trail.`,
-      });
-    }
-
-    // Capture the "before" state so the amendment block records what changed.
-    const before = {
-      vendor: po.vendor,
-      product: po.product,
-      quantity: po.quantity,
-      unitPrice: po.unitPrice,
-      totalAmount: po.totalAmount,
-      deliveryDate: po.deliveryDate,
-      status: po.status,
-    };
-
-    const editable = ["vendor", "product", "quantity", "unitPrice", "deliveryDate", "status"];
-    editable.forEach((field) => {
-      if (req.body[field] !== undefined) po[field] = req.body[field];
-    });
-    if (req.body.quantity !== undefined || req.body.unitPrice !== undefined) {
-      po.totalAmount = Number(po.quantity) * Number(po.unitPrice);
-    }
-
-    const changes = {};
-    editable.concat("totalAmount").forEach((field) => {
-      if (String(before[field]) !== String(po[field])) {
-        changes[field] = { from: before[field], to: po[field] };
-      }
-    });
-
-    await po.save();
-
-    // Every amendment gets its own block, so the chain records not just the
-    // original PO but the full history of how it was changed and by whom.
-    if (Object.keys(changes).length > 0) {
-      await mineBlock({
-        transactionType: "PO_AMENDED",
-        referenceId: po.poNumber,
-        endpoint: `/api/purchase-orders/${po._id}`,
-        data: { poNumber: po.poNumber, changes, amendedBy: req.user?.name || "Procurement Officer" },
-      });
-    }
-
-    const summary = Object.entries(changes)
-      .map(([f, c]) => `${f}: ${c.from} → ${c.to}`)
-      .join(", ");
-    await logActivity({
-      type: "PO_AMENDED",
-      message: `Purchase Order ${po.poNumber} amended${summary ? ` (${summary})` : ""}`,
-      actor: req.user?.name || "Procurement Officer",
-      referenceId: po.poNumber,
-      severity: "warning",
-    });
-
-    res.json({ purchaseOrder: po });
-  } catch (err) {
-    next(err);
-  }
+export async function updatePO(req, res) {
+  return res.status(403).json({
+    message: "Blockchain Immutability Violation: Purchase orders recorded on the blockchain are permanently anchored into a block and cannot be edited. To make a correction, issue a new purchase order.",
+  });
 }
 
 export default { listPOs, getPO, createPO, updatePO };
