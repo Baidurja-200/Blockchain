@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Upload, Receipt, CheckCircle2, XCircle, Wallet, Eye, FileUp, AlertTriangle } from "lucide-react";
+import { Upload, Receipt, CheckCircle2, XCircle, Wallet, Eye, FileUp } from "lucide-react";
 import PageHeader from "../components/ui/PageHeader";
 import Loader from "../components/ui/Loader";
 import EmptyState from "../components/ui/EmptyState";
@@ -235,11 +235,6 @@ export default function Invoices() {
                 </option>
               ))}
             </select>
-            {form.poNumber && availableGrns.length === 0 && (
-              <p className="mt-1.5 text-xs font-medium text-warning-500">
-                No GRN found for this PO — submitting without one may trigger a fraud flag.
-              </p>
-            )}
           </div>
 
           <div>
@@ -263,30 +258,8 @@ export default function Invoices() {
               className="input-field"
               value={form.invoiceAmount}
               onChange={(e) => setForm({ ...form, invoiceAmount: e.target.value })}
-              placeholder="Enter any amount — the system will check it"
+              placeholder="Enter invoice amount"
             />
-            {selectedPO &&
-              (() => {
-                const amt = Number(form.invoiceAmount);
-                if (!form.invoiceAmount || !Number.isFinite(amt) || amt <= 0) return null;
-                const diff = amt - selectedPO.totalAmount;
-                if (diff === 0) {
-                  return (
-                    <p className="mt-1.5 flex items-start gap-1.5 text-xs font-medium text-success-600 dark:text-success-400">
-                      <CheckCircle2 size={13} className="mt-0.5 shrink-0" />
-                      Matches the purchase order exactly — this check will pass.
-                    </p>
-                  );
-                }
-                const pct = Math.abs((diff / selectedPO.totalAmount) * 100).toFixed(1);
-                return (
-                  <p className="mt-1.5 flex items-start gap-1.5 text-xs font-medium text-danger-500">
-                    <AlertTriangle size={13} className="mt-0.5 shrink-0" />
-                    {formatCurrency(Math.abs(diff))} {diff > 0 ? "above" : "below"} the purchase order ({pct}%). This will
-                    be submitted, flagged as an Amount Mismatch, and rejected by the smart contract.
-                  </p>
-                );
-              })()}
           </div>
 
           <div>
