@@ -6,7 +6,6 @@ import {
   Users,
   Sparkles,
   Zap,
-  CheckCircle2,
   AlertTriangle,
   Lock,
   Cpu,

@@ -6,15 +6,6 @@ import Loader from "../components/ui/Loader";
 import { listInvoices } from "../services/invoiceService";
 import { formatCurrency } from "../utils/format";
 
-const STEP_LABELS = [
-  { key: "submitted", label: "Invoice Submitted" },
-  { key: "poExists", label: "PO Exists?" },
-  { key: "grnExists", label: "GRN Exists?" },
-  { key: "duplicateInvoice", label: "Duplicate Invoice?" },
-  { key: "amountMatches", label: "Amount Matches?" },
-  { key: "quantitySufficient", label: "Remaining Quantity Available?" },
-];
-
 export default function SmartContractValidation() {
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);

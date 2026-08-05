@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Link2, ShieldCheck, Sparkles, Blocks } from "lucide-react";
+import { motion } from "framer-motion";
+import { Link2, Sparkles } from "lucide-react";
 
 export default function IntroSplash({ onComplete }) {
   const [progress, setProgress] = useState(0);

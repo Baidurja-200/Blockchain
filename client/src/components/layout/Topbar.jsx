@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Menu, Sun, Moon, LogOut, ChevronDown, PlusCircle, FileText, PackageCheck, Receipt } from "lucide-react";
+import { Menu, Sun, Moon, LogOut, ChevronDown, PlusCircle } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { useTheme } from "../../context/ThemeContext";
 import { useNavigate } from "react-router-dom";

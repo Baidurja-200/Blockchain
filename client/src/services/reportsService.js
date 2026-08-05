@@ -1,5 +1,4 @@
 import api from "./api";
-import { MOCK_POS, MOCK_INVOICES } from "./mockData";
 
 export const generateReport = (type) =>
   api
