@@ -4,7 +4,7 @@ import { Terminal, Trash2, Wifi, WifiOff, Activity, ShieldCheck, Globe } from "l
 import PageHeader from "../components/ui/PageHeader";
 import useMonitorStream from "../hooks/useMonitorStream";
 import { useAuth } from "../context/AuthContext";
-import { fetchGlobalLedger } from "../services/cloudLedgerService";
+import { fetchGlobalLedger, getActiveSessions } from "../services/cloudLedgerService";
 
 const LEVEL_STYLES = {
   info: { text: "text-sky-400", tag: "INFO", tagCls: "bg-sky-500/15 text-sky-400" },
@@ -22,7 +22,14 @@ export default function BackendMonitor() {
   const { user } = useAuth();
   const { logs, connected, clear } = useMonitorStream();
   const [autoScroll, setAutoScroll] = useState(true);
-  const [activeSessions, setActiveSessions] = useState({});
+  const [activeSessions, setActiveSessions] = useState(() => {
+    // Initialize from localStorage or cached service data
+    try {
+      const stored = localStorage.getItem("cv_active_sessions");
+      if (stored) return JSON.parse(stored);
+    } catch (_e) {}
+    return getActiveSessions();
+  });
   const bottomRef = useRef(null);
 
   useEffect(() => {
@@ -30,15 +37,35 @@ export default function BackendMonitor() {
   }, [logs, autoScroll]);
 
   useEffect(() => {
+    // 1. Listen to cloud sync events (most reliable — fires every 3-5s)
+    const handleCloudSync = (e) => {
+      const sessions = e.detail?.sessions || e.detail?.cloud?.sessions;
+      if (sessions && Object.keys(sessions).length > 0) {
+        setActiveSessions(sessions);
+      }
+    };
+    window.addEventListener("hashflow_cloud_sync", handleCloudSync);
+
+    // 2. Also poll directly as fallback (every 5s)
     const updatePeers = async () => {
       const data = await fetchGlobalLedger();
-      if (data && data.sessions) {
+      if (data && data.sessions && Object.keys(data.sessions).length > 0) {
         setActiveSessions(data.sessions);
+      } else {
+        // Fallback to cached service data
+        const cached = getActiveSessions();
+        if (cached && Object.keys(cached).length > 0) {
+          setActiveSessions(cached);
+        }
       }
     };
     updatePeers();
-    const timer = setInterval(updatePeers, 3000);
-    return () => clearInterval(timer);
+    const timer = setInterval(updatePeers, 5000);
+
+    return () => {
+      window.removeEventListener("hashflow_cloud_sync", handleCloudSync);
+      clearInterval(timer);
+    };
   }, []);
 
   const counts = logs.reduce(

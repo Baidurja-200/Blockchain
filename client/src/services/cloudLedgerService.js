@@ -10,7 +10,9 @@ const CLOUD_LEDGER_URL = "https://api.restful-api.dev/objects/ff8081819f7e10ae01
 export const DEVICE_SESSION_ID = "node-" + Math.random().toString(36).substring(2, 9);
 
 let isSyncing = false;
+let pendingForcePush = null;
 let syncListeners = [];
+let cachedSessions = {};
 
 export function subscribeCloudSync(listener) {
   syncListeners.push(listener);
@@ -43,11 +45,19 @@ export async function fetchGlobalLedger() {
 
 let lastPushTime = 0;
 
+export function getActiveSessions() {
+  return cachedSessions;
+}
+
 export async function pushGlobalLedger(currentUser, force = false) {
   const now = Date.now();
   // Throttle regular heartbeats to max once per 12s unless forced by block creation
   if (!force && now - lastPushTime < 12000) return;
-  if (isSyncing) return;
+  // If already syncing and this is a force push (login/block), queue it instead of dropping
+  if (isSyncing) {
+    if (force) pendingForcePush = currentUser;
+    return;
+  }
   isSyncing = true;
   lastPushTime = now;
 
@@ -133,10 +143,19 @@ export async function pushGlobalLedger(currentUser, force = false) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
+    // Cache sessions locally for BackendMonitor
+    cachedSessions = activeSessions;
+    try { localStorage.setItem("cv_active_sessions", JSON.stringify(activeSessions)); } catch (_e) {}
   } catch (err) {
     // Silent failover for high concurrency network spikes
   } finally {
     isSyncing = false;
+    // If a forced push was queued while we were busy, execute it now
+    if (pendingForcePush !== null) {
+      const queuedUser = pendingForcePush;
+      pendingForcePush = null;
+      pushGlobalLedger(queuedUser, true);
+    }
   }
 }
 
@@ -211,11 +230,17 @@ export function startGlobalSyncLoop(getCurrentUser) {
         const existingLogIds = new Set(MOCK_LOGS.map((l) => l.id));
         cloud.logs.forEach((l) => {
           if (!existingLogIds.has(l.id)) {
-            MOCK_LOGS.push(l);
+            // Only use emitMockLog (which already pushes to MOCK_LOGS) to avoid duplicates
             emitMockLog(l.level, l.message, l.metadata, l.id, l.timestamp);
             hasChanges = true;
           }
         });
+      }
+
+      // Cache sessions from cloud for BackendMonitor
+      if (cloud.sessions) {
+        cachedSessions = cloud.sessions;
+        try { localStorage.setItem("cv_active_sessions", JSON.stringify(cloud.sessions)); } catch (_e) {}
       }
 
       if (hasChanges) {
@@ -226,7 +251,7 @@ export function startGlobalSyncLoop(getCurrentUser) {
       const u = getCurrentUser ? getCurrentUser() : null;
       await pushGlobalLedger(u);
 
-      notifySync({ cloud, hasChanges });
+      notifySync({ cloud, hasChanges, sessions: cachedSessions });
     } catch (e) {
       // High concurrency shield
     }
