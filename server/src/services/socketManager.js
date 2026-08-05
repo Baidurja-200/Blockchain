@@ -96,14 +96,28 @@ export function initSocketIO(httpServer) {
     socket.on("logout", (payload) => {
       if (payload && payload.name) {
         const key = `${payload.name}-${payload.role || "Visitor"}`.toLowerCase();
-        activeSessions.delete(key);
-        monitorBus.info(`[P2P] Device departed: ${payload.name} (${payload.role || "Visitor"})`);
-        broadcastSessions();
+        if (activeSessions.has(key)) {
+          const s = activeSessions.get(key);
+          activeSessions.delete(key);
+          monitorBus.info(`[P2P] Device departed: ${s.name} (${s.role})`);
+          broadcastSessions();
+        }
       }
     });
 
     socket.on("disconnect", (reason) => {
       console.log(`[WS] Client disconnected: ${socket.id} (${reason})`);
+      let removed = false;
+      for (const [key, session] of activeSessions.entries()) {
+        if (session.socketId === socket.id) {
+          activeSessions.delete(key);
+          monitorBus.info(`[P2P] Device departed: ${session.name} (${session.role})`);
+          removed = true;
+        }
+      }
+      if (removed) {
+        broadcastSessions();
+      }
     });
   });
 

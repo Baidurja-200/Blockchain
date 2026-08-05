@@ -38,35 +38,10 @@ export default function BackendMonitor() {
   }, [logs, autoScroll]);
 
   useEffect(() => {
-    const mergeSessions = (incoming) => {
-      if (!incoming || typeof incoming !== "object") return;
-      setActiveSessions((prev) => {
-        const merged = { ...prev };
-        const now = Date.now();
-
-        // Clean stale (> 15 mins)
-        Object.keys(merged).forEach((id) => {
-          if (merged[id]?.lastActive && now - new Date(merged[id].lastActive).getTime() > 900000) {
-            delete merged[id];
-          }
-        });
-
-        // Union merge incoming
-        Object.entries(incoming).forEach(([id, s]) => {
-          if (s && s.name) {
-            const key = s.sessionId || `${s.name}-${s.role}`.toLowerCase();
-            merged[key] = { ...merged[key], ...s, lastActive: s.lastActive || new Date().toISOString() };
-          }
-        });
-
-        return merged;
-      });
-    };
-
-    // 1. Listen to instant WebSocket session updates
+    // 1. Listen to instant WebSocket session updates from server
     const handleSocketSessions = (e) => {
-      if (e.detail && Object.keys(e.detail).length > 0) {
-        mergeSessions(e.detail);
+      if (e.detail && typeof e.detail === "object") {
+        setActiveSessions({ ...e.detail });
       }
     };
     window.addEventListener("hashflow_socket_sessions", handleSocketSessions);
@@ -74,34 +49,29 @@ export default function BackendMonitor() {
     // 2. Listen to cloud sync events
     const handleCloudSync = (e) => {
       const sessions = e.detail?.sessions || e.detail?.cloud?.sessions;
-      if (sessions && Object.keys(sessions).length > 0) {
-        mergeSessions(sessions);
+      if (sessions && typeof sessions === "object") {
+        setActiveSessions({ ...sessions });
       }
     };
     window.addEventListener("hashflow_cloud_sync", handleCloudSync);
 
-    // 3. Fetch from backend REST API
+    // 3. Fetch canonical sessions from server REST API
     const updatePeers = async () => {
       try {
         const res = await api.get("/monitor/sessions");
-        if (res.data?.sessions && Object.keys(res.data.sessions).length > 0) {
-          mergeSessions(res.data.sessions);
+        if (res.data?.sessions && typeof res.data.sessions === "object") {
+          setActiveSessions({ ...res.data.sessions });
           return;
         }
       } catch (_e) {}
 
       const data = await fetchGlobalLedger();
-      if (data && data.sessions && Object.keys(data.sessions).length > 0) {
-        mergeSessions(data.sessions);
-      } else {
-        const cached = getActiveSessions();
-        if (cached && Object.keys(cached).length > 0) {
-          mergeSessions(cached);
-        }
+      if (data && data.sessions && typeof data.sessions === "object") {
+        setActiveSessions({ ...data.sessions });
       }
     };
     updatePeers();
-    const timer = setInterval(updatePeers, 6000);
+    const timer = setInterval(updatePeers, 10000);
 
     return () => {
       window.removeEventListener("hashflow_socket_sessions", handleSocketSessions);
