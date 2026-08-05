@@ -1,5 +1,5 @@
 import api from "./api";
-import { MOCK_INVOICES, appendMockBlock } from "./mockData";
+import { MOCK_INVOICES, MOCK_POS, MOCK_GRNS, appendMockBlock } from "./mockData";
 
 export const listInvoices = () => api.get("/invoices").then((r) => r.data.invoices).catch(() => MOCK_INVOICES);
 export const getInvoice = (id) => api.get(`/invoices/${id}`).then((r) => r.data.invoice).catch(() => MOCK_INVOICES.find(i => i._id === id) || MOCK_INVOICES[0]);
@@ -12,8 +12,40 @@ export const createInvoice = (formData) =>
       const poNumber = formData.get ? (formData.get("poNumber") || "PO-DEMO-01") : (formData.poNumber || "PO-DEMO-01");
       const grnNumber = formData.get ? (formData.get("grnNumber") || "GRN-DEMO-01") : (formData.grnNumber || "GRN-DEMO-01");
       const vendor = formData.get ? (formData.get("vendor") || "Vendor") : (formData.vendor || "Vendor");
-      const amount = Number(formData.get ? formData.get("invoiceAmount") : formData.invoiceAmount) || 5000;
+      const amount = Number(formData.get ? formData.get("invoiceAmount") : formData.invoiceAmount) || 0;
       const invoiceNumber = "INV-" + Math.floor(1000 + Math.random() * 9000);
+
+      // Perform real 3-way match validation against mock store
+      const poObj = MOCK_POS.find((p) => p.poNumber === poNumber);
+      const grnObj = MOCK_GRNS.find((g) => g.grnNumber === grnNumber);
+
+      const poExists = Boolean(poObj);
+      const grnLinkValid = Boolean(grnObj) && grnObj.poNumber === poNumber;
+      const duplicateInvoice = MOCK_INVOICES.some((i) => i.poNumber === poNumber && (i.status === "PAID" || i.status === "APPROVED"));
+      const amountMatches = poExists && poObj.totalAmount === amount;
+      const quantitySufficient = poExists && grnLinkValid && Number(grnObj.receivedQuantity) >= Number(poObj.quantity);
+
+      const steps = [
+        { key: "poExists", label: "PO Exists?", passed: poExists, detail: poExists ? `${poNumber} found ($${poObj.totalAmount})` : `PO ${poNumber} not found` },
+        { key: "grnExists", label: "GRN Linked & Valid?", passed: grnLinkValid, detail: grnLinkValid ? `${grnNumber} linked to ${poNumber}` : (grnNumber ? `GRN ${grnNumber} is not linked to ${poNumber}` : "No GRN provided") },
+        { key: "duplicateInvoice", label: "Duplicate Invoice?", passed: !duplicateInvoice, detail: duplicateInvoice ? `PO ${poNumber} has already been invoiced/paid` : "No duplicate detected" },
+        { key: "amountMatches", label: "Amount Matches?", passed: amountMatches, detail: amountMatches ? `$${amount} matches PO amount` : `$${amount} does not match PO amount ($${poObj?.totalAmount ?? 0})` },
+        { key: "quantitySufficient", label: "Remaining Quantity Available?", passed: quantitySufficient, detail: quantitySufficient ? "Received quantity satisfies PO" : "Insufficient quantity received on GRN" },
+      ];
+
+      const approved = poExists && grnLinkValid && !duplicateInvoice && amountMatches && quantitySufficient;
+
+      const reasons = [];
+      if (!poExists) reasons.push(`Purchase order ${poNumber} does not exist.`);
+      if (!grnLinkValid) reasons.push(grnNumber ? `GRN ${grnNumber} is not linked to PO ${poNumber}.` : `Invoice submitted without a valid Goods Receipt Note (GRN).`);
+      if (duplicateInvoice) reasons.push(`Duplicate invoice submission detected for ${poNumber}.`);
+      if (!amountMatches && poExists) reasons.push(`Invoice amount ($${amount}) does not match PO total amount ($${poObj.totalAmount}).`);
+      if (!quantitySufficient && poExists && grnLinkValid) reasons.push(`Quantity received on GRN is less than quantity ordered on PO.`);
+      if (approved) reasons.push("Complete three-way match verified", "GRN matches PO", "No duplicate invoice detected");
+
+      const fraudScore = approved ? 5 : (duplicateInvoice ? 85 : (!grnLinkValid ? 75 : 60));
+      const fraudRiskLevel = approved ? "LOW" : (fraudScore >= 60 ? "HIGH" : "MEDIUM");
+      const status = approved ? "APPROVED" : "REJECTED";
 
       const newBlock = appendMockBlock("INVOICE", invoiceNumber, {
         invoiceNumber,
@@ -21,7 +53,8 @@ export const createInvoice = (formData) =>
         grnNumber,
         vendor,
         amount,
-        status: "APPROVED",
+        status,
+        approved,
       });
 
       const inv = {
@@ -31,25 +64,20 @@ export const createInvoice = (formData) =>
         grnNumber,
         vendor,
         invoiceAmount: amount,
-        amount: amount,
-        status: "APPROVED",
-        paymentStatus: "PENDING",
-        fraudScore: 5,
-        fraudRiskLevel: "LOW",
+        amount,
+        status,
+        paymentStatus: approved ? "PENDING" : "REJECTED",
+        rejectionReason: approved ? null : reasons[0],
+        fraudScore,
+        fraudRiskLevel,
         fraud: {
-          score: 5,
-          recommendation: "Approve",
-          reasons: ["Three-way match verified", "No duplicate invoice detected", "PO & GRN matched"],
+          score: fraudScore,
+          recommendation: approved ? "Approve" : "Reject",
+          reasons,
         },
         validation: {
-          passed: true,
-          steps: [
-            { key: "poExists", label: "PO Exists?", passed: true, detail: `${poNumber} found ($${amount})` },
-            { key: "grnExists", label: "GRN Exists?", passed: true, detail: `${grnNumber} found` },
-            { key: "duplicateInvoice", label: "Duplicate Invoice?", passed: true, detail: "No duplicate" },
-            { key: "amountMatches", label: "Amount Matches?", passed: true, detail: "Amount matched" },
-            { key: "quantitySufficient", label: "Remaining Quantity Available?", passed: true, detail: "Quantity satisfied" },
-          ],
+          passed: approved,
+          steps,
         },
         blockId: newBlock.blockNumber,
         blockNumber: newBlock.blockNumber,
@@ -58,7 +86,16 @@ export const createInvoice = (formData) =>
         blockTimestamp: newBlock.timestamp,
         createdAt: new Date().toISOString(),
       };
+
       MOCK_INVOICES.unshift(inv);
+
+      appendMockBlock("VALIDATION", invoiceNumber, {
+        invoiceNumber,
+        approved,
+        fraudScore,
+        status,
+      });
+
       return inv;
     });
 

@@ -136,7 +136,7 @@ contract ThreeWayMatch {
         GoodsReceipt memory grn = goodsReceipts[grnKey];
 
         bool poExists = po.exists;
-        bool grnExists = grn.exists;
+        bool grnExists = grn.exists && (_key(grn.poNumber) == poKey);
         bool duplicateInvoice = poInvoiced[poKey];
         bool amountMatches = poExists && po.totalAmount == invoiceAmount;
         bool quantitySufficient = poExists && grnExists && grn.quantityReceived >= po.quantity;
