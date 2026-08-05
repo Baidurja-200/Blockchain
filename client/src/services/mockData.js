@@ -12,13 +12,13 @@ try {
 
 export const MOCK_LOGS = [];
 
-export function emitMockLog(level, message, metadata = {}) {
+export function emitMockLog(level, message, metadata = {}, customId = null, customTimestamp = null) {
   const entry = {
-    id: "log-" + Date.now() + "-" + Math.floor(Math.random() * 10000),
+    id: customId || ("log-" + Date.now() + "-" + Math.floor(Math.random() * 10000)),
     level: level || "info",
     message,
     metadata,
-    timestamp: new Date().toISOString(),
+    timestamp: customTimestamp || new Date().toISOString(),
   };
 
   MOCK_LOGS.unshift(entry);

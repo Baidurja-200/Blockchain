@@ -106,6 +106,15 @@ export async function pushGlobalLedger(currentUser, force = false) {
       if (curTime - last > 600000) delete activeSessions[sId];
     });
 
+    // Merge Logs from all active devices
+    const logMap = new Map();
+    [...(currentData.logs || []), ...MOCK_LOGS].forEach((l) => {
+      if (l && l.id) logMap.set(l.id, l);
+    });
+    const mergedLogs = Array.from(logMap.values())
+      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+      .slice(0, 100);
+
     const payload = {
       name: "Hashflow Global Ledger",
       data: {
@@ -114,7 +123,7 @@ export async function pushGlobalLedger(currentUser, force = false) {
         grns: mergedGRNs.slice(0, 100),
         invoices: mergedInvoices.slice(0, 100),
         sessions: activeSessions,
-        logs: MOCK_LOGS.slice(0, 50),
+        logs: mergedLogs,
         lastUpdated: new Date().toISOString(),
       },
     };
@@ -195,7 +204,7 @@ export function startGlobalSyncLoop(getCurrentUser) {
         cloud.logs.forEach((l) => {
           if (!existingLogIds.has(l.id)) {
             MOCK_LOGS.push(l);
-            emitMockLog(l.level, l.message, l.metadata);
+            emitMockLog(l.level, l.message, l.metadata, l.id, l.timestamp);
             hasChanges = true;
           }
         });
