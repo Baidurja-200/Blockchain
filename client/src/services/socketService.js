@@ -18,7 +18,7 @@ export function initSocket() {
   // If hosted on GitHub Pages or external domain, connect to window.location.origin or relative path if proxied
   const socketUrl = import.meta.env.VITE_API_URL ||
     (typeof window !== "undefined" && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1"
-      ? "https://chainverify-server.onrender.com"
+      ? "https://blockchain-l5oh.onrender.com"
       : "http://localhost:5000");
 
   socket = io(socketUrl, {

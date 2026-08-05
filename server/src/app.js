@@ -38,6 +38,16 @@ app.use(express.json());
 app.use(morgan("dev"));
 app.use("/uploads", express.static(path.resolve("uploads")));
 
+app.get("/", (req, res) => {
+  res.json({
+    status: "ok",
+    service: "ChainVerify Real-Time Blockchain API",
+    version: "1.0.0",
+    client: "https://baidurja-200.github.io/Blockchain/",
+    health: "/api/health",
+  });
+});
+
 app.get("/api/health", (req, res) => res.json({ status: "ok", service: "hashflow-api" }));
 
 app.use("/api/auth", authRoutes);

@@ -3,7 +3,7 @@ import axios from "axios";
 const getApiBaseUrl = () => {
   if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL + "/api";
   if (typeof window !== "undefined" && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
-    return "https://chainverify-server.onrender.com/api";
+    return "https://blockchain-l5oh.onrender.com/api";
   }
   return "/api";
 };
