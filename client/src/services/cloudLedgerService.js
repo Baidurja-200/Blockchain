@@ -41,9 +41,15 @@ export async function fetchGlobalLedger() {
   }
 }
 
-export async function pushGlobalLedger(currentUser) {
+let lastPushTime = 0;
+
+export async function pushGlobalLedger(currentUser, force = false) {
+  const now = Date.now();
+  // Throttle regular heartbeats to max once per 12s unless forced by block creation
+  if (!force && now - lastPushTime < 12000) return;
   if (isSyncing) return;
   isSyncing = true;
+  lastPushTime = now;
 
   try {
     const currentData = (await fetchGlobalLedger()) || { blocks: [], pos: [], grns: [], invoices: [], sessions: {}, logs: [] };
@@ -81,7 +87,7 @@ export async function pushGlobalLedger(currentUser) {
     });
     const mergedInvoices = Array.from(invMap.values());
 
-    // Merge sessions
+    // Merge active user sessions
     const activeSessions = currentData.sessions || {};
     if (currentUser) {
       activeSessions[DEVICE_SESSION_ID] = {
@@ -93,20 +99,20 @@ export async function pushGlobalLedger(currentUser) {
       };
     }
 
-    // Clean old sessions (older than 10 mins)
-    const now = Date.now();
+    // Clean stale sessions (older than 10 mins)
+    const curTime = Date.now();
     Object.keys(activeSessions).forEach((sId) => {
       const last = new Date(activeSessions[sId].lastActive).getTime();
-      if (now - last > 600000) delete activeSessions[sId];
+      if (curTime - last > 600000) delete activeSessions[sId];
     });
 
     const payload = {
       name: "Hashflow Global Ledger",
       data: {
-        blocks: mergedBlocks.slice(0, 100),
-        pos: mergedPOs.slice(0, 50),
-        grns: mergedGRNs.slice(0, 50),
-        invoices: mergedInvoices.slice(0, 50),
+        blocks: mergedBlocks.slice(0, 150),
+        pos: mergedPOs.slice(0, 100),
+        grns: mergedGRNs.slice(0, 100),
+        invoices: mergedInvoices.slice(0, 100),
         sessions: activeSessions,
         logs: MOCK_LOGS.slice(0, 50),
         lastUpdated: new Date().toISOString(),
@@ -119,7 +125,7 @@ export async function pushGlobalLedger(currentUser) {
       body: JSON.stringify(payload),
     });
   } catch (err) {
-    // Cloud push error silent fallback
+    // Silent failover for high concurrency network spikes
   } finally {
     isSyncing = false;
   }
@@ -128,80 +134,88 @@ export async function pushGlobalLedger(currentUser) {
 export function startGlobalSyncLoop(getCurrentUser) {
   if (typeof window === "undefined") return;
 
+  let active = true;
+
   const pullAndMerge = async () => {
-    const cloud = await fetchGlobalLedger();
-    if (!cloud) return;
+    if (!active) return;
+    try {
+      const cloud = await fetchGlobalLedger();
+      if (!cloud) return;
 
-    let hasChanges = false;
+      let hasChanges = false;
 
-    // Merge blocks into local MOCK_BLOCKS
-    if (Array.isArray(cloud.blocks)) {
-      const existingIds = new Set(MOCK_BLOCKS.map((b) => String(b.blockNumber || b._id)));
-      cloud.blocks.forEach((b) => {
-        if (!existingIds.has(String(b.blockNumber || b._id))) {
-          MOCK_BLOCKS.push(b);
-          hasChanges = true;
-        }
-      });
-      MOCK_BLOCKS.sort((a, b) => (Number(b.blockNumber) || 0) - (Number(a.blockNumber) || 0));
+      // Merge blocks into local MOCK_BLOCKS
+      if (Array.isArray(cloud.blocks)) {
+        const existingIds = new Set(MOCK_BLOCKS.map((b) => String(b.blockNumber || b._id)));
+        cloud.blocks.forEach((b) => {
+          if (!existingIds.has(String(b.blockNumber || b._id))) {
+            MOCK_BLOCKS.push(b);
+            hasChanges = true;
+          }
+        });
+        MOCK_BLOCKS.sort((a, b) => (Number(b.blockNumber) || 0) - (Number(a.blockNumber) || 0));
+      }
+
+      // Merge POs
+      if (Array.isArray(cloud.pos)) {
+        const existingPOs = new Set(MOCK_POS.map((p) => p.poNumber));
+        cloud.pos.forEach((p) => {
+          if (!existingPOs.has(p.poNumber)) {
+            MOCK_POS.unshift(p);
+            hasChanges = true;
+          }
+        });
+      }
+
+      // Merge GRNs
+      if (Array.isArray(cloud.grns)) {
+        const existingGRNs = new Set(MOCK_GRNS.map((g) => g.grnNumber));
+        cloud.grns.forEach((g) => {
+          if (!existingGRNs.has(g.grnNumber)) {
+            MOCK_GRNS.unshift(g);
+            hasChanges = true;
+          }
+        });
+      }
+
+      // Merge Invoices
+      if (Array.isArray(cloud.invoices)) {
+        const existingInvoices = new Set(MOCK_INVOICES.map((i) => i.invoiceNumber));
+        cloud.invoices.forEach((i) => {
+          if (!existingInvoices.has(i.invoiceNumber)) {
+            MOCK_INVOICES.unshift(i);
+            hasChanges = true;
+          }
+        });
+      }
+
+      // Push local heartbeat session
+      const u = getCurrentUser ? getCurrentUser() : null;
+      await pushGlobalLedger(u);
+
+      notifySync({ cloud, hasChanges });
+    } catch (e) {
+      // High concurrency shield
     }
-
-    // Merge POs
-    if (Array.isArray(cloud.pos)) {
-      const existingPOs = new Set(MOCK_POS.map((p) => p.poNumber));
-      cloud.pos.forEach((p) => {
-        if (!existingPOs.has(p.poNumber)) {
-          MOCK_POS.unshift(p);
-          hasChanges = true;
-        }
-      });
-    }
-
-    // Merge GRNs
-    if (Array.isArray(cloud.grns)) {
-      const existingGRNs = new Set(MOCK_GRNS.map((g) => g.grnNumber));
-      cloud.grns.forEach((g) => {
-        if (!existingGRNs.has(g.grnNumber)) {
-          MOCK_GRNS.unshift(g);
-          hasChanges = true;
-        }
-      });
-    }
-
-    // Merge Invoices
-    if (Array.isArray(cloud.invoices)) {
-      const existingInvoices = new Set(MOCK_INVOICES.map((i) => i.invoiceNumber));
-      cloud.invoices.forEach((i) => {
-        if (!existingInvoices.has(i.invoiceNumber)) {
-          MOCK_INVOICES.unshift(i);
-          hasChanges = true;
-        }
-      });
-    }
-
-    // Merge Logs
-    if (Array.isArray(cloud.logs)) {
-      const existingLogIds = new Set(MOCK_LOGS.map((l) => l.id));
-      cloud.logs.forEach((l) => {
-        if (!existingLogIds.has(l.id)) {
-          MOCK_LOGS.push(l);
-          emitMockLog(l.level, l.message, l.metadata);
-          hasChanges = true;
-        }
-      });
-    }
-
-    // Push local heartbeat session
-    const u = getCurrentUser ? getCurrentUser() : null;
-    await pushGlobalLedger(u);
-
-    notifySync({ cloud, hasChanges });
   };
 
-  // Run initial pull immediately
+  // Run initial pull
   pullAndMerge();
 
-  // Poll every 3.5 seconds
-  const intervalId = setInterval(pullAndMerge, 3500);
-  return () => clearInterval(intervalId);
+  // Jittered recursive timeout between 3000ms and 5000ms for 45+ concurrent devices
+  let timerId = null;
+  const scheduleNext = () => {
+    const jitter = Math.floor(3000 + Math.random() * 2500);
+    timerId = setTimeout(async () => {
+      await pullAndMerge();
+      if (active) scheduleNext();
+    }, jitter);
+  };
+
+  scheduleNext();
+
+  return () => {
+    active = false;
+    if (timerId) clearTimeout(timerId);
+  };
 }

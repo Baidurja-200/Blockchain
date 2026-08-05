@@ -89,7 +89,7 @@ export function appendMockBlock(transactionType, referenceId, payload) {
         const raw = localStorage.getItem("cv_user");
         if (raw) u = JSON.parse(raw);
       } catch (e) {}
-      pushGlobalLedger(u);
+      pushGlobalLedger(u, true);
     }).catch(() => {});
   }
 
