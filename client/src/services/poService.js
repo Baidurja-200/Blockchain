@@ -12,7 +12,12 @@ export const createPO = (payload) =>
       const quantity = Number(payload.quantity);
       const unitPrice = Number(payload.unitPrice);
       const totalAmount = quantity * unitPrice;
-      const now = new Date().toISOString();
+
+      if (!payload.vendor || !payload.product || quantity <= 0 || unitPrice <= 0 || !payload.deliveryDate) {
+        const err = new Error("Blockchain Validation Error: Transaction Restricted. Purchase order contains invalid vendor, zero quantity, or negative unit price. Smart contract rejected transaction.");
+        err.response = { data: { message: err.message } };
+        throw err;
+      }
 
       const newBlock = appendMockBlock("PURCHASE_ORDER", poNumber, {
         poNumber,

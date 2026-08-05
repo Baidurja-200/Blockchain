@@ -146,19 +146,18 @@ contract ThreeWayMatch {
         bool quantitySufficient = poExists && grnExists && grn.quantityReceived >= po.quantity;
 
         approved = poExists && grnExists && !duplicateInvoice && amountMatches && quantitySufficient;
+        require(approved, "ThreeWayMatch: Invoice three-way match failed. Smart contract rejected transaction.");
 
         invoices[invKey] = Invoice({
             invoiceNumber: invoiceNumber,
             poNumber: poNumber,
             grnNumber: grnNumber,
             invoiceAmount: invoiceAmount,
-            status: approved ? InvoiceStatus.Approved : InvoiceStatus.Rejected,
+            status: InvoiceStatus.Approved,
             exists: true
         });
 
-        if (approved) {
-            poInvoiced[poKey] = true;
-        }
+        poInvoiced[poKey] = true;
 
         emit InvoiceSubmitted(invoiceNumber, poNumber, grnNumber, invoiceAmount, block.timestamp);
         emit InvoiceValidated(invoiceNumber, poExists, grnExists, duplicateInvoice, amountMatches, quantitySufficient, approved, block.timestamp);

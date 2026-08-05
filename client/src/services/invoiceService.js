@@ -94,7 +94,21 @@ export const createInvoice = (formData) =>
         approved,
         fraudScore,
         status,
+        reasons,
       });
+
+      if (!approved) {
+        const errorMsg = `Blockchain Validation Error: Transaction Restricted. Three-way match failed (${reasons.join(" ")}). Smart contract rejected invoice approval (Mined Block #${newBlock.blockNumber}).`;
+        const err = new Error(errorMsg);
+        err.response = {
+          data: {
+            message: errorMsg,
+            blockNumber: newBlock.blockNumber,
+            invoice: inv,
+          },
+        };
+        throw err;
+      }
 
       return inv;
     });
@@ -117,6 +131,11 @@ export const payInvoice = (id) =>
   api.post(`/invoices/${id}/pay`).then((r) => r.data).catch(() => {
     const inv = MOCK_INVOICES.find((i) => i._id === id);
     if (inv) {
+      if (inv.status === "REJECTED" || inv.fraudScore > 50) {
+        const err = new Error(`Blockchain Validation Error: Payment Restricted. Rejected/high-risk invoice ${inv.invoiceNumber} cannot be settled on-chain.`);
+        err.response = { data: { message: err.message } };
+        throw err;
+      }
       inv.status = "PAID";
       inv.paymentStatus = "PAID";
       appendMockBlock("PAYMENT", inv.invoiceNumber, {
