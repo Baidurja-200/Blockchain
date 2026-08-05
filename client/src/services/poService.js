@@ -43,7 +43,7 @@ export const createPO = (payload) =>
         blockHash: newBlock.hash,
         txHash: newBlock.hash,
         blockTimestamp: newBlock.timestamp,
-        createdAt: now,
+        createdAt: new Date().toISOString(),
       };
       MOCK_POS.unshift(newPO);
       return newPO;

@@ -189,6 +189,18 @@ export function startGlobalSyncLoop(getCurrentUser) {
         });
       }
 
+      // Merge Logs from all classmate devices
+      if (Array.isArray(cloud.logs)) {
+        const existingLogIds = new Set(MOCK_LOGS.map((l) => l.id));
+        cloud.logs.forEach((l) => {
+          if (!existingLogIds.has(l.id)) {
+            MOCK_LOGS.push(l);
+            emitMockLog(l.level, l.message, l.metadata);
+            hasChanges = true;
+          }
+        });
+      }
+
       // Push local heartbeat session
       const u = getCurrentUser ? getCurrentUser() : null;
       await pushGlobalLedger(u);

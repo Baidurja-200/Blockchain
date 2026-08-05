@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { login as loginRequest } from "../services/authService";
 import { emitMockLog } from "../services/mockData";
+import { pushGlobalLedger } from "../services/cloudLedgerService";
 
 const AuthContext = createContext(null);
 
@@ -14,6 +15,7 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     if (user) {
       localStorage.setItem("cv_user", JSON.stringify(user));
+      pushGlobalLedger(user, true);
     } else {
       localStorage.removeItem("cv_user");
     }
@@ -44,6 +46,8 @@ export function AuthProvider({ children }) {
         { user: loggedInUser }
       );
 
+      pushGlobalLedger(loggedInUser, true);
+
       return loggedInUser;
     } finally {
       setLoading(false);
@@ -57,6 +61,7 @@ export function AuthProvider({ children }) {
     localStorage.removeItem("cv_token");
     localStorage.removeItem("cv_user");
     setUser(null);
+    pushGlobalLedger(null, true);
   }, [user]);
 
   return <AuthContext.Provider value={{ user, login, logout, loading }}>{children}</AuthContext.Provider>;
