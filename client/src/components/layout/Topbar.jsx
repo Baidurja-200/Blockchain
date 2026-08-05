@@ -21,6 +21,13 @@ export default function Topbar({ onOpenMobile, title }) {
           <Menu size={20} />
         </button>
         <h2 className="hidden text-base font-extrabold text-slate-800 dark:text-slate-100 sm:block">{title}</h2>
+        <div className="hidden xl:flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+          <span className="relative flex h-2 w-2">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
+          </span>
+          <span>Logged in as {user?.name || "Guest"} ({user?.role || "Visitor"}) &middot; Node Online</span>
+        </div>
       </div>
 
       <div className="flex items-center gap-2 sm:gap-3">

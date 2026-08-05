@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Terminal, Trash2, Wifi, WifiOff, Activity } from "lucide-react";
+import { Terminal, Trash2, Wifi, WifiOff, Activity, ShieldCheck } from "lucide-react";
 import PageHeader from "../components/ui/PageHeader";
 import useMonitorStream from "../hooks/useMonitorStream";
+import { useAuth } from "../context/AuthContext";
 
 const LEVEL_STYLES = {
   info: { text: "text-sky-400", tag: "INFO", tagCls: "bg-sky-500/15 text-sky-400" },
@@ -17,6 +18,7 @@ function formatClock(iso) {
 }
 
 export default function BackendMonitor() {
+  const { user } = useAuth();
   const { logs, connected, clear } = useMonitorStream();
   const [autoScroll, setAutoScroll] = useState(true);
   const bottomRef = useRef(null);
@@ -41,7 +43,7 @@ export default function BackendMonitor() {
         action={
           <div className="flex items-center gap-2">
             <span className={`badge ${connected ? "bg-success-500/10 text-success-500" : "bg-danger-500/10 text-danger-500"}`}>
-              {connected ? <Wifi size={12} /> : <WifiOff size={12} />} {connected ? "Live" : "Disconnected"}
+              {connected ? <Wifi size={12} /> : <WifiOff size={12} />} {connected ? "Live Node" : "Disconnected"}
             </span>
             <button className="btn-secondary" onClick={clear}>
               <Trash2 size={15} /> Clear
@@ -49,6 +51,23 @@ export default function BackendMonitor() {
           </div>
         }
       />
+
+      <div className="mb-4 rounded-2xl border border-brand-500/20 bg-brand-500/5 p-4 text-xs">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
+            </span>
+            <span className="font-bold text-slate-800 dark:text-slate-100">Network Consensus Node:</span>
+            <span className="text-brand-600 dark:text-brand-400 font-semibold">node-us-east-1 (P2P Sync Active)</span>
+          </div>
+          <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
+            <ShieldCheck size={14} className="text-emerald-500" />
+            Active User: <strong className="text-slate-900 dark:text-slate-100">{user?.name || "Guest User"}</strong> ({user?.role || "Visitor"})
+          </div>
+        </div>
+      </div>
 
       <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[

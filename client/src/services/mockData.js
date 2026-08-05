@@ -1,4 +1,44 @@
-// Client-side fallback dataset for static GitHub Pages hosting when backend API is offline.
+// Client-side fallback & live sync dataset for static GitHub Pages hosting.
+
+const SYNC_CHANNEL_NAME = "hashflow_p2p_sync";
+let broadcastChannel = null;
+try {
+  if (typeof window !== "undefined" && "BroadcastChannel" in window) {
+    broadcastChannel = new BroadcastChannel(SYNC_CHANNEL_NAME);
+  }
+} catch (err) {
+  // fallback for unsupported environments
+}
+
+export const MOCK_LOGS = [];
+
+export function emitMockLog(level, message, metadata = {}) {
+  const entry = {
+    id: "log-" + Date.now() + "-" + Math.floor(Math.random() * 10000),
+    level: level || "info",
+    message,
+    metadata,
+    timestamp: new Date().toISOString(),
+  };
+
+  MOCK_LOGS.unshift(entry);
+  if (MOCK_LOGS.length > 500) MOCK_LOGS.pop();
+
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("hashflow_log", { detail: entry }));
+    try {
+      localStorage.setItem("cv_mock_logs", JSON.stringify(MOCK_LOGS.slice(0, 50)));
+    } catch (e) {}
+  }
+
+  if (broadcastChannel) {
+    try {
+      broadcastChannel.postMessage({ type: "LOG", entry });
+    } catch (e) {}
+  }
+
+  return entry;
+}
 
 export function appendMockBlock(transactionType, referenceId, payload) {
   const nextBlockNumber = MOCK_BLOCKS.length > 0
@@ -28,6 +68,20 @@ export function appendMockBlock(transactionType, referenceId, payload) {
   };
 
   MOCK_BLOCKS.unshift(newBlock);
+
+  // Emit real-time log event
+  emitMockLog(
+    transactionType.includes("REJECTED") ? "error" : "success",
+    `[BLOCKCHAIN] Mined Block #${nextBlockNumber} [${transactionType}] (${referenceId}) — Hash: ${newHash.slice(0, 16)}...`,
+    { blockNumber: nextBlockNumber, referenceId, transactionType, payload }
+  );
+
+  if (broadcastChannel) {
+    try {
+      broadcastChannel.postMessage({ type: "BLOCK_MINED", block: newBlock, MOCK_BLOCKS, MOCK_POS, MOCK_GRNS, MOCK_INVOICES });
+    } catch (e) {}
+  }
+
   return newBlock;
 }
 
