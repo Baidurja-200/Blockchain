@@ -6,6 +6,7 @@ import { runThreeWayMatch } from "../services/threeWayMatchService.js";
 import { scoreInvoice } from "../services/fraudDetectionService.js";
 import { logActivity } from "../utils/activity.js";
 import monitorBus from "../services/monitorBus.js";
+import { broadcastDataChange } from "../services/socketManager.js";
 
 export async function listInvoices(req, res, next) {
   try {
@@ -108,6 +109,7 @@ export async function createInvoice(req, res, next) {
       });
     }
 
+    broadcastDataChange("invoice_created", invoice);
     res.status(201).json({ invoice });
   } catch (err) {
     if (err.code === 11000) {
@@ -142,6 +144,7 @@ export async function decideInvoice(req, res, next) {
       severity: invoice.status === "Approved" ? "success" : "danger",
     });
 
+    broadcastDataChange("invoice_updated", invoice);
     res.json({ invoice, blockId: block.blockNumber });
   } catch (err) {
     next(err);
@@ -173,6 +176,7 @@ export async function payInvoice(req, res, next) {
       severity: "success",
     });
 
+    broadcastDataChange("invoice_updated", invoice);
     res.json({ invoice, blockId: block.blockNumber });
   } catch (err) {
     next(err);

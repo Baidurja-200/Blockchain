@@ -37,7 +37,15 @@ export default function BackendMonitor() {
   }, [logs, autoScroll]);
 
   useEffect(() => {
-    // 1. Listen to cloud sync events (most reliable — fires every 3-5s)
+    // 1. Listen to instant WebSocket session updates
+    const handleSocketSessions = (e) => {
+      if (e.detail && Object.keys(e.detail).length > 0) {
+        setActiveSessions(e.detail);
+      }
+    };
+    window.addEventListener("hashflow_socket_sessions", handleSocketSessions);
+
+    // 2. Listen to cloud sync events
     const handleCloudSync = (e) => {
       const sessions = e.detail?.sessions || e.detail?.cloud?.sessions;
       if (sessions && Object.keys(sessions).length > 0) {
@@ -46,13 +54,23 @@ export default function BackendMonitor() {
     };
     window.addEventListener("hashflow_cloud_sync", handleCloudSync);
 
-    // 2. Also poll directly as fallback (every 5s)
+    // 3. Also fetch directly from server REST API fallback
     const updatePeers = async () => {
+      try {
+        const res = await fetch("/api/monitor/sessions");
+        if (res.ok) {
+          const json = await res.json();
+          if (json.sessions && Object.keys(json.sessions).length > 0) {
+            setActiveSessions(json.sessions);
+            return;
+          }
+        }
+      } catch (_e) {}
+
       const data = await fetchGlobalLedger();
       if (data && data.sessions && Object.keys(data.sessions).length > 0) {
         setActiveSessions(data.sessions);
       } else {
-        // Fallback to cached service data
         const cached = getActiveSessions();
         if (cached && Object.keys(cached).length > 0) {
           setActiveSessions(cached);
@@ -63,6 +81,7 @@ export default function BackendMonitor() {
     const timer = setInterval(updatePeers, 5000);
 
     return () => {
+      window.removeEventListener("hashflow_socket_sessions", handleSocketSessions);
       window.removeEventListener("hashflow_cloud_sync", handleCloudSync);
       clearInterval(timer);
     };

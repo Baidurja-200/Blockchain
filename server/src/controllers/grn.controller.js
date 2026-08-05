@@ -3,6 +3,7 @@ import PurchaseOrder from "../models/PurchaseOrder.js";
 import { mineBlock } from "../services/blockchainService.js";
 import { logActivity } from "../utils/activity.js";
 import monitorBus from "../services/monitorBus.js";
+import { broadcastDataChange } from "../services/socketManager.js";
 
 export async function listGRNs(req, res, next) {
   try {
@@ -121,6 +122,7 @@ export async function createGRN(req, res, next) {
       });
     }
 
+    broadcastDataChange("grn_created", grn);
     res.status(201).json({ grn });
   } catch (err) {
     if (err.code === 11000) {

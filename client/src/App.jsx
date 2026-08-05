@@ -4,6 +4,7 @@ import DashboardLayout from "./layouts/DashboardLayout";
 import ProtectedRoute from "./components/common/ProtectedRoute";
 import ErrorBoundary from "./components/common/ErrorBoundary";
 import { startGlobalSyncLoop } from "./services/cloudLedgerService";
+import { initSocket, registerUser, unregisterUser } from "./services/socketService";
 import { useAuth } from "./context/AuthContext";
 
 import Login from "./pages/Login";
@@ -22,6 +23,15 @@ import NotFound from "./pages/NotFound";
 
 export default function App() {
   const { user } = useAuth();
+
+  useEffect(() => {
+    initSocket();
+    if (user) {
+      registerUser(user);
+    } else {
+      unregisterUser();
+    }
+  }, [user]);
 
   useEffect(() => {
     const stopSync = startGlobalSyncLoop(() => user);

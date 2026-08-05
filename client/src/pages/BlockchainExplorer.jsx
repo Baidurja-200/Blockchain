@@ -38,9 +38,11 @@ export default function BlockchainExplorer() {
 
     const handleSync = () => fetchBlocks();
     window.addEventListener("hashflow_cloud_sync", handleSync);
+    window.addEventListener("hashflow_data_changed", handleSync);
 
     return () => {
       window.removeEventListener("hashflow_cloud_sync", handleSync);
+      window.removeEventListener("hashflow_data_changed", handleSync);
     };
   }, []);
 

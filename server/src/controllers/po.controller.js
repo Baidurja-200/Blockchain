@@ -3,6 +3,7 @@ import Invoice from "../models/Invoice.js";
 import { mineBlock } from "../services/blockchainService.js";
 import { logActivity } from "../utils/activity.js";
 import monitorBus from "../services/monitorBus.js";
+import { broadcastDataChange } from "../services/socketManager.js";
 
 export async function listPOs(req, res, next) {
   try {
@@ -69,6 +70,7 @@ export async function createPO(req, res, next) {
       severity: "success",
     });
 
+    broadcastDataChange("po_created", po);
     res.status(201).json({ purchaseOrder: po });
   } catch (err) {
     if (err.code === 11000) {

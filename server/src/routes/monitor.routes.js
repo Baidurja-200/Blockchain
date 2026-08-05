@@ -1,6 +1,7 @@
 import { Router } from "express";
 import jwt from "jsonwebtoken";
 import monitorBus from "../services/monitorBus.js";
+import { getActiveSessions } from "../services/socketManager.js";
 
 const router = Router();
 
@@ -47,6 +48,10 @@ router.get("/stream", (req, res) => {
 
 router.get("/history", (req, res) => {
   res.json({ logs: monitorBus.history });
+});
+
+router.get("/sessions", (req, res) => {
+  res.json({ sessions: getActiveSessions() });
 });
 
 export default router;

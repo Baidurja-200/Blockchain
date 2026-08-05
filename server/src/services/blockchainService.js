@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import Block from "../models/Block.js";
 import monitorBus from "./monitorBus.js";
+import { broadcastDataChange } from "./socketManager.js";
 
 const GENESIS_PREVIOUS_HASH = "0".repeat(64);
 
@@ -97,6 +98,8 @@ export async function mineBlock({ transactionType, referenceId, data, endpoint, 
 
   monitorBus.success(`Block #${blockNumber} added to chain (hash ${hash.slice(0, 16)}...)`, { referenceId, blockNumber });
   monitorBus.success(`SUCCESS — ${transactionType} anchored on-chain`, { referenceId, blockNumber });
+
+  broadcastDataChange("block_mined", block);
 
   return { block, txHash };
 }

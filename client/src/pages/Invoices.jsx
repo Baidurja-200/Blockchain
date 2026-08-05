@@ -47,7 +47,11 @@ export default function Invoices() {
     load();
     const handleSync = () => load();
     window.addEventListener("hashflow_cloud_sync", handleSync);
-    return () => window.removeEventListener("hashflow_cloud_sync", handleSync);
+    window.addEventListener("hashflow_data_changed", handleSync);
+    return () => {
+      window.removeEventListener("hashflow_cloud_sync", handleSync);
+      window.removeEventListener("hashflow_data_changed", handleSync);
+    };
   }, []);
 
   const safeInvoices = invoices || [];

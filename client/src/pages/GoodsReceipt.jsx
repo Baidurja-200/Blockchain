@@ -39,7 +39,11 @@ export default function GoodsReceipt() {
     load();
     const handleSync = () => load();
     window.addEventListener("hashflow_cloud_sync", handleSync);
-    return () => window.removeEventListener("hashflow_cloud_sync", handleSync);
+    window.addEventListener("hashflow_data_changed", handleSync);
+    return () => {
+      window.removeEventListener("hashflow_cloud_sync", handleSync);
+      window.removeEventListener("hashflow_data_changed", handleSync);
+    };
   }, []);
 
   const selectedPO = pos.find((p) => p.poNumber === form.poNumber);

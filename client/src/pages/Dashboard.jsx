@@ -59,9 +59,11 @@ export default function Dashboard() {
     load();
     const handleSync = () => load();
     window.addEventListener("hashflow_cloud_sync", handleSync);
+    window.addEventListener("hashflow_data_changed", handleSync);
     return () => {
       mounted = false;
       window.removeEventListener("hashflow_cloud_sync", handleSync);
+      window.removeEventListener("hashflow_data_changed", handleSync);
     };
   }, []);
 
