@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Plus, PackageCheck, AlertTriangle, CheckCircle2, Lock } from "lucide-react";
+import { Plus, PackageCheck, Lock, AlertTriangle } from "lucide-react";
 import PageHeader from "../components/ui/PageHeader";
 import Loader from "../components/ui/Loader";
 import EmptyState from "../components/ui/EmptyState";
@@ -171,25 +171,8 @@ export default function GoodsReceipt() {
               className="input-field"
               value={form.quantityReceived}
               onChange={(e) => setForm({ ...form, quantityReceived: e.target.value })}
+              placeholder="Enter quantity received"
             />
-            {selectedPO && Number(form.quantityReceived) > remaining && (
-              <p className="mt-1.5 flex items-start gap-1.5 text-xs font-medium text-danger-500">
-                <AlertTriangle size={13} className="mt-0.5 shrink-0" />
-                Over-receipt: {Number(form.quantityReceived) - remaining} more than the {remaining} still outstanding. This
-                will be accepted, recorded on-chain, and flagged as a fraud indicator.
-              </p>
-            )}
-            {selectedPO && Number(form.quantityReceived) > 0 && Number(form.quantityReceived) < remaining && (
-              <p className="mt-1.5 text-xs text-warning-600 dark:text-warning-400">
-                Partial delivery — {remaining - Number(form.quantityReceived)} units will still be outstanding.
-              </p>
-            )}
-            {selectedPO && Number(form.quantityReceived) > 0 && Number(form.quantityReceived) === remaining && (
-              <p className="mt-1.5 flex items-start gap-1.5 text-xs font-medium text-success-600 dark:text-success-400">
-                <CheckCircle2 size={13} className="mt-0.5 shrink-0" />
-                Completes the order exactly — this check will pass.
-              </p>
-            )}
           </div>
 
           <div>
