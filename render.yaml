@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: chainverify-server
+    env: node
+    region: singapore
+    plan: free
+    buildCommand: cd server && npm install
+    startCommand: cd server && npm start
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: NODE_ENV
+        value: production
+      - key: CLIENT_ORIGIN
+        value: https://baidurja-200.github.io
+      - key: DEMO_PASSWORD
+        value: demo123

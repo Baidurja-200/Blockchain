@@ -16,9 +16,10 @@ export function initSocket() {
 
   // Determine backend URL:
   // If hosted on GitHub Pages or external domain, connect to window.location.origin or relative path if proxied
-  const socketUrl = window.location.port === "5173"
-    ? "http://localhost:5000"
-    : window.location.origin;
+  const socketUrl = import.meta.env.VITE_API_URL ||
+    (typeof window !== "undefined" && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1"
+      ? "https://chainverify-server.onrender.com"
+      : "http://localhost:5000");
 
   socket = io(socketUrl, {
     transports: ["websocket", "polling"],

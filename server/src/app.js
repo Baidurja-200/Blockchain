@@ -17,7 +17,23 @@ import { notFound, errorHandler } from "./middleware/errorHandler.js";
 
 const app = express();
 
-app.use(cors({ origin: process.env.CLIENT_ORIGIN || "*" }));
+const allowedOrigins = [
+  process.env.CLIENT_ORIGIN,
+  "https://baidurja-200.github.io",
+  "http://localhost:5173",
+  "http://127.0.0.1:5173"
+].filter(Boolean);
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes("*")) {
+      callback(null, true);
+    } else {
+      callback(null, true); // Allow demo cross-origin connections
+    }
+  },
+  credentials: true,
+}));
 app.use(express.json());
 app.use(morgan("dev"));
 app.use("/uploads", express.static(path.resolve("uploads")));
