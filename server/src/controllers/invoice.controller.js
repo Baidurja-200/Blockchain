@@ -170,7 +170,7 @@ export async function payInvoice(req, res, next) {
 
     await logActivity({
       type: "PAYMENT_RELEASED",
-      message: `Payment of $${invoice.invoiceAmount.toLocaleString()} released for ${invoice.invoiceNumber}`,
+      message: `Payment of ₹${invoice.invoiceAmount.toLocaleString()} released for ${invoice.invoiceNumber}`,
       actor: req.user?.name || "Finance Officer",
       referenceId: invoice.invoiceNumber,
       severity: "success",

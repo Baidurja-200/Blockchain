@@ -1,6 +1,6 @@
 export function formatCurrency(value) {
-  if (value === null || value === undefined) return "$0";
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(value);
+  if (value === null || value === undefined) return "₹0";
+  return new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(value);
 }
 
 export function formatDate(value) {

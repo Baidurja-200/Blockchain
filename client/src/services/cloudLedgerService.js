@@ -260,10 +260,11 @@ export function startGlobalSyncLoop(getCurrentUser) {
   // Run initial pull
   pullAndMerge();
 
-  // Jittered recursive timeout between 3000ms and 5000ms for 45+ concurrent devices
+  // Reduced polling interval (30s) since Socket.IO / WebSockets provide instant real-time updates.
+  // This prevents continuous UI re-rendering and flickering.
   let timerId = null;
   const scheduleNext = () => {
-    const jitter = Math.floor(3000 + Math.random() * 2500);
+    const jitter = Math.floor(25000 + Math.random() * 10000); // 25-35s
     timerId = setTimeout(async () => {
       await pullAndMerge();
       if (active) scheduleNext();

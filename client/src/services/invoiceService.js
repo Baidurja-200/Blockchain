@@ -26,10 +26,10 @@ export const createInvoice = (formData) =>
       const quantitySufficient = poExists && grnLinkValid && Number(grnObj.receivedQuantity) >= Number(poObj.quantity);
 
       const steps = [
-        { key: "poExists", label: "PO Exists?", passed: poExists, detail: poExists ? `${poNumber} found ($${poObj.totalAmount})` : `PO ${poNumber} not found` },
+        { key: "poExists", label: "PO Exists?", passed: poExists, detail: poExists ? `${poNumber} found (₹${poObj.totalAmount})` : `PO ${poNumber} not found` },
         { key: "grnExists", label: "GRN Linked & Valid?", passed: grnLinkValid, detail: grnLinkValid ? `${grnNumber} linked to ${poNumber}` : (grnNumber ? `GRN ${grnNumber} is not linked to ${poNumber}` : "No GRN provided") },
         { key: "duplicateInvoice", label: "Duplicate Invoice?", passed: !duplicateInvoice, detail: duplicateInvoice ? `PO ${poNumber} has already been invoiced/paid` : "No duplicate detected" },
-        { key: "amountMatches", label: "Amount Matches?", passed: amountMatches, detail: amountMatches ? `$${amount} matches PO amount` : `$${amount} does not match PO amount ($${poObj?.totalAmount ?? 0})` },
+        { key: "amountMatches", label: "Amount Matches?", passed: amountMatches, detail: amountMatches ? `₹${amount} matches PO amount` : `₹${amount} does not match PO amount (₹${poObj?.totalAmount ?? 0})` },
         { key: "quantitySufficient", label: "Remaining Quantity Available?", passed: quantitySufficient, detail: quantitySufficient ? "Received quantity satisfies PO" : "Insufficient quantity received on GRN" },
       ];
 
@@ -39,7 +39,7 @@ export const createInvoice = (formData) =>
       if (!poExists) reasons.push(`Purchase order ${poNumber} does not exist.`);
       if (!grnLinkValid) reasons.push(grnNumber ? `GRN ${grnNumber} is not linked to PO ${poNumber}.` : `Invoice submitted without a valid Goods Receipt Note (GRN).`);
       if (duplicateInvoice) reasons.push(`Duplicate invoice submission detected for ${poNumber}.`);
-      if (!amountMatches && poExists) reasons.push(`Invoice amount ($${amount}) does not match PO total amount ($${poObj.totalAmount}).`);
+      if (!amountMatches && poExists) reasons.push(`Invoice amount (₹${amount}) does not match PO total amount (₹${poObj.totalAmount}).`);
       if (!quantitySufficient && poExists && grnLinkValid) reasons.push(`Quantity received on GRN is less than quantity ordered on PO.`);
       if (approved) reasons.push("Complete three-way match verified", "GRN matches PO", "No duplicate invoice detected");
 

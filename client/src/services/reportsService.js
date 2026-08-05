@@ -21,21 +21,21 @@ export const generateReport = (type) =>
       };
       const rows = {
         purchase: [
-          ["PO-DEMO-01", "NovaTech Supplies", "Server Racks", "50", "$5,000", "CLOSED"],
-          ["PO-DEMO-02", "BluePeak Electronics", "Network Switches", "30", "$6,000", "INVOICED"],
-          ["PO-DEMO-03", "Meridian Steel", "Steel Sheets", "100", "$4,500", "RECEIVED"],
+          ["PO-DEMO-01", "NovaTech Supplies", "Server Racks", "50", "₹50,000", "CLOSED"],
+          ["PO-DEMO-02", "BluePeak Electronics", "Network Switches", "30", "₹60,000", "INVOICED"],
+          ["PO-DEMO-03", "Meridian Steel", "Steel Sheets", "100", "₹45,000", "RECEIVED"],
         ],
         fraud: [
-          ["INV-DEMO-03-DUP", "NovaTech Supplies", "$5,000", "85", "HIGH", "Duplicate invoice submission"],
+          ["INV-DEMO-03-DUP", "NovaTech Supplies", "₹50,000", "85", "HIGH", "Duplicate invoice submission"],
         ],
         vendor: [
-          ["NovaTech Industrial Supplies", "3", "$48,500", "Active"],
-          ["BluePeak Electronics", "2", "$32,000", "Active"],
-          ["Meridian Steel & Alloys", "1", "$4,500", "Active"],
+          ["NovaTech Industrial Supplies", "3", "₹4,85,000", "Active"],
+          ["BluePeak Electronics", "2", "₹3,20,000", "Active"],
+          ["Meridian Steel & Alloys", "1", "₹45,000", "Active"],
         ],
         audit: [
-          ["INV-DEMO-01", "PO-DEMO-01", "GRN-DEMO-01", "APPROVED & PAID", "$5,000", new Date().toLocaleDateString()],
-          ["INV-DEMO-02", "PO-DEMO-02", "GRN-DEMO-02", "APPROVED", "$6,000", new Date().toLocaleDateString()],
+          ["INV-DEMO-01", "PO-DEMO-01", "GRN-DEMO-01", "APPROVED & PAID", "₹50,000", new Date().toLocaleDateString()],
+          ["INV-DEMO-02", "PO-DEMO-02", "GRN-DEMO-02", "APPROVED", "₹60,000", new Date().toLocaleDateString()],
         ],
         blockchain: [
           ["0", "GENESIS", "0000a1b2c3d4...", "00000000...", new Date().toLocaleDateString()],

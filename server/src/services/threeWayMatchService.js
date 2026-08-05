@@ -68,7 +68,7 @@ export async function runThreeWayMatch(invoiceDoc, { emitLogs = false } = {}) {
     "amountMatches",
     "Amount Matches PO?",
     amountMatches,
-    poExists ? `Invoice $${invoiceDoc.invoiceAmount.toLocaleString()} vs PO $${po.totalAmount.toLocaleString()}` : "Cannot compare — PO missing"
+    poExists ? `Invoice ₹${invoiceDoc.invoiceAmount.toLocaleString()} vs PO ₹${po.totalAmount.toLocaleString()}` : "Cannot compare — PO missing"
   );
   if (emitLogs) await sleep(220);
 

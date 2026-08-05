@@ -119,7 +119,7 @@ async function createPO(scenario, index) {
 
   await logActivity({
     type: "PO_CREATED",
-    message: `Purchase Order ${po.poNumber} created for ${scenario.vendor} ($${totalAmount.toLocaleString()})`,
+    message: `Purchase Order ${po.poNumber} created for ${scenario.vendor} (₹${totalAmount.toLocaleString()})`,
     actor: SETUP_ACTOR,
     referenceId: po.poNumber,
     severity: "success",
@@ -256,7 +256,7 @@ async function finalizeInvoice({ invoice, matchResult, fraudResult, createdAt, f
   if (invoice.paymentStatus === "Paid") {
     await logActivity({
       type: "PAYMENT_RELEASED",
-      message: `Payment of $${invoice.invoiceAmount.toLocaleString()} released for ${invoice.invoiceNumber}`,
+      message: `Payment of ₹${invoice.invoiceAmount.toLocaleString()} released for ${invoice.invoiceNumber}`,
       actor: SETUP_ACTOR,
       referenceId: invoice.invoiceNumber,
       severity: "success",
