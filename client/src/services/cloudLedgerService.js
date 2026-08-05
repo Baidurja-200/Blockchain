@@ -2,7 +2,7 @@
 // Enables real-time synchronization of mined blocks, purchase orders, GRNs, invoices,
 // active user sessions, and live logs across different physical devices (laptops, phones, tablets).
 
-import { MOCK_BLOCKS, MOCK_POS, MOCK_GRNS, MOCK_INVOICES, MOCK_LOGS, emitMockLog } from "./mockData";
+import { MOCK_BLOCKS, MOCK_POS, MOCK_GRNS, MOCK_INVOICES, MOCK_LOGS, emitMockLog, saveMockState } from "./mockData";
 
 const CLOUD_LEDGER_URL = "https://api.restful-api.dev/objects/ff8081819f7e10ae019fd335b7b27bf8";
 
@@ -208,6 +208,10 @@ export function startGlobalSyncLoop(getCurrentUser) {
             hasChanges = true;
           }
         });
+      }
+
+      if (hasChanges) {
+        saveMockState();
       }
 
       // Push local heartbeat session

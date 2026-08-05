@@ -40,6 +40,16 @@ export function emitMockLog(level, message, metadata = {}, customId = null, cust
   return entry;
 }
 
+export function saveMockState() {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem("cv_mock_blocks", JSON.stringify(MOCK_BLOCKS));
+    localStorage.setItem("cv_mock_pos", JSON.stringify(MOCK_POS));
+    localStorage.setItem("cv_mock_grns", JSON.stringify(MOCK_GRNS));
+    localStorage.setItem("cv_mock_invoices", JSON.stringify(MOCK_INVOICES));
+  } catch (e) {}
+}
+
 export function appendMockBlock(transactionType, referenceId, payload) {
   const nextBlockNumber = MOCK_BLOCKS.length > 0
     ? Math.max(...MOCK_BLOCKS.map((b) => Number(b.blockNumber) || 0)) + 1
@@ -68,6 +78,7 @@ export function appendMockBlock(transactionType, referenceId, payload) {
   };
 
   MOCK_BLOCKS.unshift(newBlock);
+  saveMockState();
 
   // Emit real-time log event
   emitMockLog(
@@ -96,7 +107,20 @@ export function appendMockBlock(transactionType, referenceId, payload) {
   return newBlock;
 }
 
-export const MOCK_POS = [
+function loadStoredArray(key, defaultVal) {
+  if (typeof window !== "undefined") {
+    try {
+      const raw = localStorage.getItem(key);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+  }
+  return defaultVal;
+}
+
+const INITIAL_POS = [
   {
     _id: "po-101",
     poNumber: "PO-DEMO-01",
@@ -184,7 +208,7 @@ export const MOCK_POS = [
   },
 ];
 
-export const MOCK_GRNS = [
+const INITIAL_GRNS = [
   {
     _id: "grn-201",
     grnNumber: "GRN-DEMO-01",
@@ -232,7 +256,7 @@ export const MOCK_GRNS = [
   },
 ];
 
-export const MOCK_INVOICES = [
+const INITIAL_INVOICES = [
   {
     _id: "inv-301",
     invoiceNumber: "INV-DEMO-01",
@@ -336,7 +360,7 @@ export const MOCK_INVOICES = [
   },
 ];
 
-export const MOCK_BLOCKS = [
+const INITIAL_BLOCKS = [
   {
     _id: "block-0",
     blockNumber: 0,
@@ -394,6 +418,11 @@ export const MOCK_BLOCKS = [
     payload: { invoiceNumber: "INV-DEMO-01", amount: 5000, status: "PAID" },
   },
 ];
+
+export const MOCK_POS = loadStoredArray("cv_mock_pos", INITIAL_POS);
+export const MOCK_GRNS = loadStoredArray("cv_mock_grns", INITIAL_GRNS);
+export const MOCK_INVOICES = loadStoredArray("cv_mock_invoices", INITIAL_INVOICES);
+export const MOCK_BLOCKS = loadStoredArray("cv_mock_blocks", INITIAL_BLOCKS);
 
 export const MOCK_KPIS = {
   totalPOs: 6,

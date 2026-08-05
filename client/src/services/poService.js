@@ -1,5 +1,5 @@
 import api from "./api";
-import { MOCK_POS, appendMockBlock } from "./mockData";
+import { MOCK_POS, appendMockBlock, saveMockState } from "./mockData";
 
 export const listPOs = () => api.get("/purchase-orders").then((r) => r.data.purchaseOrders).catch(() => MOCK_POS);
 export const getPO = (id) => api.get(`/purchase-orders/${id}`).then((r) => r.data.purchaseOrder).catch(() => MOCK_POS.find(p => p._id === id) || MOCK_POS[0]);
@@ -46,6 +46,7 @@ export const createPO = (payload) =>
         createdAt: new Date().toISOString(),
       };
       MOCK_POS.unshift(newPO);
+      saveMockState();
       return newPO;
     });
 export const updatePO = () =>
