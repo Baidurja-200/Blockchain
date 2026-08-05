@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
 import User, { ROLES } from "../models/User.js";
 import monitorBus from "../services/monitorBus.js";
-import { broadcastDataChange } from "../services/socketManager.js";
+import { broadcastDataChange, registerUserSession } from "../services/socketManager.js";
 
 // Classroom mode: everyone shares one password, and picks their own display
 // name + role at login. This trades per-person credentials for something a
@@ -73,6 +73,7 @@ export async function login(req, res, next) {
 
     const token = signToken(user);
     monitorBus.success(`Login SUCCESS — ${user.name} (${user.role})`);
+    registerUserSession({ name: user.name, role: user.role });
     broadcastDataChange("user_login", { name: user.name, role: user.role, email: user.email });
     res.json({ token, user: user.toSafeJSON() });
   } catch (err) {

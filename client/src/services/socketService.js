@@ -3,19 +3,24 @@ import { emitMockLog } from "./mockData";
 
 /**
  * Socket.IO Client Singleton for real-time cross-device data synchronisation.
- *
- * Connects to the Express backend server (via WebSocket / HTTP long-polling).
- * Dispatches custom window events so React components can update automatically.
  */
 
 let socket = null;
 let currentUser = null;
+let pingInterval = null;
+
+function getStoredUser() {
+  if (currentUser) return currentUser;
+  try {
+    const raw = localStorage.getItem("cv_user");
+    if (raw) return JSON.parse(raw);
+  } catch (_e) {}
+  return null;
+}
 
 export function initSocket() {
   if (socket) return socket;
 
-  // Determine backend URL:
-  // If hosted on GitHub Pages or external domain, connect to window.location.origin or relative path if proxied
   const socketUrl = import.meta.env.VITE_API_URL ||
     (typeof window !== "undefined" && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1"
       ? "https://blockchain-l5oh.onrender.com"
@@ -31,8 +36,9 @@ export function initSocket() {
 
   socket.on("connect", () => {
     console.log("[WS Client] Connected to server:", socket.id);
-    if (currentUser) {
-      registerUser(currentUser);
+    const u = getStoredUser();
+    if (u && u.name) {
+      socket.emit("register", { name: u.name, role: u.role });
     }
   });
 
@@ -42,6 +48,9 @@ export function initSocket() {
 
   // 1. Live sessions update (for Backend Monitor)
   socket.on("sessions:update", (sessions) => {
+    if (sessions && typeof sessions === "object") {
+      try { localStorage.setItem("cv_active_sessions", JSON.stringify(sessions)); } catch (_e) {}
+    }
     window.dispatchEvent(new CustomEvent("hashflow_socket_sessions", { detail: sessions }));
     window.dispatchEvent(new CustomEvent("hashflow_cloud_sync", { detail: { sessions } }));
   });
@@ -60,22 +69,36 @@ export function initSocket() {
     window.dispatchEvent(new CustomEvent("hashflow_cloud_sync", { detail: { hasChanges: true, data: event } }));
   });
 
+  // Start ping heartbeat to keep active session alive on server
+  if (!pingInterval) {
+    pingInterval = setInterval(() => {
+      const u = getStoredUser();
+      if (socket && socket.connected && u && u.name) {
+        socket.emit("ping:user", { name: u.name, role: u.role });
+      }
+    }, 8000);
+  }
+
   return socket;
 }
 
 export function registerUser(user) {
   currentUser = user;
   if (!socket) initSocket();
-  if (socket && socket.connected && user) {
-    socket.emit("register", { name: user.name, role: user.role });
+
+  if (socket && user && user.name) {
+    if (socket.connected) {
+      socket.emit("register", { name: user.name, role: user.role });
+    }
   }
 }
 
 export function unregisterUser() {
-  currentUser = null;
-  if (socket && socket.connected) {
-    socket.emit("logout");
+  const u = currentUser || getStoredUser();
+  if (socket && socket.connected && u && u.name) {
+    socket.emit("logout", { name: u.name, role: u.role });
   }
+  currentUser = null;
 }
 
 export function getSocket() {

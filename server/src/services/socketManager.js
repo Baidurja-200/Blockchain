@@ -2,22 +2,69 @@ import { Server as SocketIOServer } from "socket.io";
 import monitorBus from "./monitorBus.js";
 
 /**
- * Manages all WebSocket (Socket.IO) connections for real-time cross-device
- * data synchronisation in the classroom demo.
- *
- * Every browser tab that connects gets tracked here. When any device creates
- * a PO, GRN, Invoice, or mines a block, we broadcast the event to ALL
- * connected clients so their UI updates instantly — no polling required.
+ * Manages all WebSocket (Socket.IO) connections and user session tracking
+ * for real-time cross-device data synchronisation.
  */
 
 let io = null;
 
-// sessionId → { socketId, name, role, nodeName, lastActive }
+// sessionKey (e.g. "Rahul (Vendor)") -> { sessionId, name, role, nodeName, lastActive, socketId }
 const activeSessions = new Map();
 
 /**
- * Initialise Socket.IO on the given HTTP server.
- * Called once from server/src/index.js at startup.
+ * Clean up stale user sessions older than 15 minutes.
+ */
+function cleanupStaleSessions() {
+  const now = Date.now();
+  let changed = false;
+  for (const [key, session] of activeSessions.entries()) {
+    if (session.lastActive) {
+      const last = new Date(session.lastActive).getTime();
+      if (now - last > 900000) { // 15 mins
+        activeSessions.delete(key);
+        changed = true;
+      }
+    }
+  }
+  if (changed) {
+    broadcastSessions();
+  }
+}
+
+/**
+ * Register or refresh a user session on the server.
+ * Can be called from WebSockets or HTTP REST API controllers.
+ */
+export function registerUserSession(user, socketId = null) {
+  if (!user || !user.name) return;
+
+  cleanupStaleSessions();
+
+  const name = user.name.trim();
+  const role = user.role || "Visitor";
+  const sessionKey = `${name}-${role}`.toLowerCase();
+
+  const existing = activeSessions.get(sessionKey);
+  const nodeSuffix = socketId ? socketId.slice(-4) : (existing?.nodeName?.slice(-4) || Math.random().toString(36).slice(2, 6));
+
+  const sessionInfo = {
+    sessionId: sessionKey,
+    name,
+    role,
+    nodeName: `node-${role.toLowerCase().replace(/\s+/g, "-")}-${nodeSuffix}`,
+    lastActive: new Date().toISOString(),
+    socketId: socketId || existing?.socketId || null,
+  };
+
+  activeSessions.set(sessionKey, sessionInfo);
+  console.log(`[WS] Active Session Registered: ${name} (${role}) — ${sessionInfo.nodeName}`);
+
+  broadcastSessions();
+  return sessionInfo;
+}
+
+/**
+ * Initialise Socket.IO on the HTTP server.
  */
 export function initSocketIO(httpServer) {
   io = new SocketIOServer(httpServer, {
@@ -25,7 +72,6 @@ export function initSocketIO(httpServer) {
       origin: "*",
       methods: ["GET", "POST"],
     },
-    // Classroom LANs can be flaky; be generous with timeouts
     pingTimeout: 30000,
     pingInterval: 10000,
   });
@@ -33,40 +79,30 @@ export function initSocketIO(httpServer) {
   io.on("connection", (socket) => {
     console.log(`[WS] Client connected: ${socket.id}`);
 
-    // Client sends this right after connecting (or after login)
+    // Client registers user right after connecting or logging in
     socket.on("register", (payload) => {
-      const { name, role } = payload || {};
-      const sessionInfo = {
-        socketId: socket.id,
-        name: name || "Anonymous",
-        role: role || "Visitor",
-        nodeName: `node-${(role || "visitor").toLowerCase().replace(/\s+/g, "-")}-${socket.id.slice(-4)}`,
-        lastActive: new Date().toISOString(),
-      };
-      activeSessions.set(socket.id, sessionInfo);
-
-      monitorBus.success(`[P2P] Device joined: ${sessionInfo.name} (${sessionInfo.role}) — ${sessionInfo.nodeName}`);
-
-      // Notify all clients about the updated session list
-      broadcastSessions();
+      if (payload && payload.name) {
+        const sessionInfo = registerUserSession(payload, socket.id);
+        monitorBus.success(`[P2P] Device joined: ${sessionInfo.name} (${sessionInfo.role}) — ${sessionInfo.nodeName}`);
+      }
     });
 
-    socket.on("logout", () => {
-      const session = activeSessions.get(socket.id);
-      if (session) {
-        monitorBus.info(`[P2P] Device departed: ${session.name} (${session.role})`);
+    socket.on("ping:user", (payload) => {
+      if (payload && payload.name) {
+        registerUserSession(payload, socket.id);
       }
-      activeSessions.delete(socket.id);
-      broadcastSessions();
+    });
+
+    socket.on("logout", (payload) => {
+      if (payload && payload.name) {
+        const key = `${payload.name}-${payload.role || "Visitor"}`.toLowerCase();
+        activeSessions.delete(key);
+        monitorBus.info(`[P2P] Device departed: ${payload.name} (${payload.role || "Visitor"})`);
+        broadcastSessions();
+      }
     });
 
     socket.on("disconnect", (reason) => {
-      const session = activeSessions.get(socket.id);
-      if (session) {
-        monitorBus.info(`[P2P] Device disconnected: ${session.name} (${session.role}) — ${reason}`);
-      }
-      activeSessions.delete(socket.id);
-      broadcastSessions();
       console.log(`[WS] Client disconnected: ${socket.id} (${reason})`);
     });
   });
@@ -77,6 +113,9 @@ export function initSocketIO(httpServer) {
       io.emit("monitor:log", entry);
     }
   });
+
+  // Run session cleanup every 2 minutes
+  setInterval(cleanupStaleSessions, 120000);
 
   console.log("[WS] Socket.IO initialised — real-time sync ready");
   return io;
@@ -99,6 +138,7 @@ export function broadcastSessions() {
 
 /** Get active sessions as a plain object (for REST endpoints). */
 export function getActiveSessions() {
+  cleanupStaleSessions();
   const sessions = {};
   for (const [id, info] of activeSessions) {
     sessions[id] = info;
@@ -108,21 +148,19 @@ export function getActiveSessions() {
 
 /**
  * Broadcast a data change event to all connected clients.
- * Pages listen for these events and auto-refresh their data.
- *
- * @param {'po_created'|'grn_created'|'invoice_created'|'invoice_updated'|'block_mined'} eventType
- * @param {object} data — the created/updated record
  */
 export function broadcastDataChange(eventType, data) {
   if (!io) return;
   io.emit(`data:${eventType}`, data);
-  // Also fire a generic event so pages can use a single listener
   io.emit("data:changed", { type: eventType, data });
+  // Also send current sessions so peer list refreshes on every data change
+  broadcastSessions();
 }
 
 export default {
   initSocketIO,
   getIO,
+  registerUserSession,
   getActiveSessions,
   broadcastSessions,
   broadcastDataChange,
