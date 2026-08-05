@@ -45,15 +45,24 @@ export default function Dashboard() {
 
   useEffect(() => {
     let mounted = true;
-    Promise.all([fetchKpis(), fetchCharts(), fetchRecentActivity(10)])
-      .then(([k, c, a]) => {
-        if (!mounted) return;
-        setKpis(k);
-        setCharts(c);
-        setActivities(a);
-      })
-      .finally(() => mounted && setLoading(false));
-    return () => (mounted = false);
+    const load = () => {
+      Promise.all([fetchKpis(), fetchCharts(), fetchRecentActivity(10)])
+        .then(([k, c, a]) => {
+          if (!mounted) return;
+          setKpis(k);
+          setCharts(c);
+          setActivities(a);
+        })
+        .finally(() => mounted && setLoading(false));
+    };
+
+    load();
+    const handleSync = () => load();
+    window.addEventListener("hashflow_cloud_sync", handleSync);
+    return () => {
+      mounted = false;
+      window.removeEventListener("hashflow_cloud_sync", handleSync);
+    };
   }, []);
 
   if (loading) return <Loader label="Loading dashboard..." />;

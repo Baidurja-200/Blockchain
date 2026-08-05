@@ -28,9 +28,20 @@ export default function BlockchainExplorer() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   useEffect(() => {
-    listBlocks()
-      .then(setBlocks)
-      .finally(() => setLoading(false));
+    const fetchBlocks = () => {
+      listBlocks()
+        .then((data) => setBlocks([...data]))
+        .finally(() => setLoading(false));
+    };
+
+    fetchBlocks();
+
+    const handleSync = () => fetchBlocks();
+    window.addEventListener("hashflow_cloud_sync", handleSync);
+
+    return () => {
+      window.removeEventListener("hashflow_cloud_sync", handleSync);
+    };
   }, []);
 
   /**

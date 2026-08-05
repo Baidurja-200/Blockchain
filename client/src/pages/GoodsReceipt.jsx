@@ -29,13 +29,18 @@ export default function GoodsReceipt() {
     setLoading(true);
     Promise.all([listGRNs(), listPOs()])
       .then(([g, p]) => {
-        setGrns(g);
-        setPOs(p);
+        setGrns([...g]);
+        setPOs([...p]);
       })
       .finally(() => setLoading(false));
   };
 
-  useEffect(load, []);
+  useEffect(() => {
+    load();
+    const handleSync = () => load();
+    window.addEventListener("hashflow_cloud_sync", handleSync);
+    return () => window.removeEventListener("hashflow_cloud_sync", handleSync);
+  }, []);
 
   const selectedPO = pos.find((p) => p.poNumber === form.poNumber);
   const alreadyReceived = selectedPO

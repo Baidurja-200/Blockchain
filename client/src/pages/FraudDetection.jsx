@@ -17,13 +17,20 @@ export default function FraudDetection() {
   const [selectedId, setSelectedId] = useState("");
 
   useEffect(() => {
-    Promise.all([listFlaggedInvoices(), fraudSummary()])
-      .then(([inv, sum]) => {
-        setInvoices(inv);
-        setSummary(sum);
-        if (inv.length) setSelectedId(inv[0]._id);
-      })
-      .finally(() => setLoading(false));
+    const load = () => {
+      Promise.all([listFlaggedInvoices(), fraudSummary()])
+        .then(([inv, sum]) => {
+          setInvoices(inv);
+          setSummary(sum);
+          if (inv.length && !selectedId) setSelectedId(inv[0]._id);
+        })
+        .finally(() => setLoading(false));
+    };
+
+    load();
+    const handleSync = () => load();
+    window.addEventListener("hashflow_cloud_sync", handleSync);
+    return () => window.removeEventListener("hashflow_cloud_sync", handleSync);
   }, []);
 
   if (loading) return <Loader label="Loading fraud detection data..." />;

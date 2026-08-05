@@ -30,11 +30,16 @@ export default function PurchaseOrders() {
   const load = () => {
     setLoading(true);
     listPOs()
-      .then(setPOs)
+      .then((data) => setPOs([...data]))
       .finally(() => setLoading(false));
   };
 
-  useEffect(load, []);
+  useEffect(() => {
+    load();
+    const handleSync = () => load();
+    window.addEventListener("hashflow_cloud_sync", handleSync);
+    return () => window.removeEventListener("hashflow_cloud_sync", handleSync);
+  }, []);
 
   const totalAmount = (Number(form.quantity) || 0) * (Number(form.unitPrice) || 0);
 

@@ -35,15 +35,20 @@ export default function Invoices() {
     setLoading(true);
     Promise.all([listInvoices(), listPOs(), listGRNs()])
       .then(([i, p, g]) => {
-        setInvoices(i || []);
-        setPOs(p || []);
-        setGrns(g || []);
+        setInvoices([...(i || [])]);
+        setPOs([...(p || [])]);
+        setGrns([...(g || [])]);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
   };
 
-  useEffect(load, []);
+  useEffect(() => {
+    load();
+    const handleSync = () => load();
+    window.addEventListener("hashflow_cloud_sync", handleSync);
+    return () => window.removeEventListener("hashflow_cloud_sync", handleSync);
+  }, []);
 
   const safeInvoices = invoices || [];
   const filtered = tab === "All" ? safeInvoices : safeInvoices.filter((i) => i?.status === tab);
