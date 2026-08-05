@@ -95,39 +95,46 @@ export default function BlockchainExplorer() {
         <Loader label="Loading blockchain..." />
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {blocks.map((block, i) => (
-            <motion.button
-              key={block._id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: Math.min(i * 0.02, 0.4) }}
-              onClick={() => setSelected(block)}
-              className="glass-card group p-5 text-left transition-transform hover:-translate-y-1"
-            >
-              <div className="mb-3 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-900 text-white dark:bg-white dark:text-slate-900">
-                    <Blocks size={15} />
+          {blocks.map((block, i) => {
+            const txType = block.transactionType || block.type || "GENESIS";
+            const displayType = String(txType).replace(/_/g, " ");
+            const status = block.status || "CONFIRMED";
+            const refId = block.referenceId || block.payload?.poNumber || block.payload?.invoiceNumber || block.payload?.grnNumber || "SYS-00";
+
+            return (
+              <motion.button
+                key={block._id || block.blockNumber || i}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: Math.min(i * 0.02, 0.4) }}
+                onClick={() => setSelected(block)}
+                className="glass-card group p-5 text-left transition-transform hover:-translate-y-1"
+              >
+                <div className="mb-3 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-900 text-white dark:bg-white dark:text-slate-900">
+                      <Blocks size={15} />
+                    </div>
+                    <span className="text-sm font-extrabold text-slate-800 dark:text-slate-100">Block #{block.blockNumber}</span>
                   </div>
-                  <span className="text-sm font-extrabold text-slate-800 dark:text-slate-100">Block #{block.blockNumber}</span>
+                  <StatusBadge status={status} />
                 </div>
-                <StatusBadge status={block.status} />
-              </div>
 
-              <span className={`badge mb-3 ${TYPE_COLORS[block.transactionType] || "bg-slate-100 text-slate-600"}`}>
-                {block.transactionType.replace("_", " ")}
-              </span>
+                <span className={`badge mb-3 ${TYPE_COLORS[txType] || "bg-slate-100 text-slate-600"}`}>
+                  {displayType}
+                </span>
 
-              <div className="space-y-1.5 text-xs">
-                <p className="flex items-center gap-1.5 text-slate-400">
-                  <Link2 size={11} /> Ref: <span className="font-medium text-slate-600 dark:text-slate-300">{block.referenceId}</span>
-                </p>
-                <p className="mono text-slate-400">Hash: {truncateHash(block.hash, 12)}</p>
-                <p className="mono text-slate-400">Prev: {truncateHash(block.previousHash, 12)}</p>
-                <p className="text-slate-400">{formatDateTime(block.timestamp)}</p>
-              </div>
-            </motion.button>
-          ))}
+                <div className="space-y-1.5 text-xs">
+                  <p className="flex items-center gap-1.5 text-slate-400">
+                    <Link2 size={11} /> Ref: <span className="font-medium text-slate-600 dark:text-slate-300">{refId}</span>
+                  </p>
+                  <p className="mono text-slate-400">Hash: {truncateHash(block.hash, 12)}</p>
+                  <p className="mono text-slate-400">Prev: {truncateHash(block.previousHash, 12)}</p>
+                  <p className="text-slate-400">{formatDateTime(block.timestamp)}</p>
+                </div>
+              </motion.button>
+            );
+          })}
         </div>
       )}
 
@@ -135,10 +142,10 @@ export default function BlockchainExplorer() {
         {selected && (
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-3 text-xs sm:grid-cols-3">
-              <Detail label="Type" value={selected.transactionType} />
-              <Detail label="Status" value={<StatusBadge status={selected.status} />} />
-              <Detail label="Reference" value={selected.referenceId} />
-              <Detail label="Nonce" value={selected.nonce} />
+              <Detail label="Type" value={selected.transactionType || selected.type || "GENESIS"} />
+              <Detail label="Status" value={<StatusBadge status={selected.status || "CONFIRMED"} />} />
+              <Detail label="Reference" value={selected.referenceId || selected.payload?.poNumber || selected.payload?.invoiceNumber || selected.payload?.grnNumber || "SYS-00"} />
+              <Detail label="Nonce" value={selected.nonce ?? 0} />
               <Detail label="Timestamp" value={formatDateTime(selected.timestamp)} />
             </div>
 

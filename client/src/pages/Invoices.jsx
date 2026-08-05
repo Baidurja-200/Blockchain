@@ -158,47 +158,53 @@ export default function Invoices() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-              {filtered.map((inv, i) => (
-                <motion.tr
-                  key={inv._id}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: Math.min(i * 0.02, 0.4) }}
-                  className="transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/40"
-                >
-                  <td className="px-4 py-3 font-semibold text-brand-600 dark:text-brand-400">{inv.invoiceNumber}</td>
-                  <td className="px-4 py-3">{inv.vendor}</td>
-                  <td className="px-4 py-3 text-slate-500 dark:text-slate-400">
-                    {inv.poNumber} / {inv.grnNumber || "—"}
-                  </td>
-                  <td className="px-4 py-3 font-medium">{formatCurrency(inv.invoiceAmount)}</td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`font-semibold ${
-                        inv.fraud.score >= 60 ? "text-danger-500" : inv.fraud.score >= 30 ? "text-warning-500" : "text-success-500"
-                      }`}
-                    >
-                      {inv.fraud.score}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <StatusBadge status={inv.status} />
-                  </td>
-                  <td className="px-4 py-3">
-                    <StatusBadge status={inv.paymentStatus} />
-                  </td>
-                  <td className="px-4 py-3">
-                    <BlockLink blockId={inv.blockId} />
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex justify-end gap-1.5">
-                      <button className="btn-ghost !p-1.5" onClick={() => setViewInvoice(inv)} title="View">
-                        <Eye size={15} />
-                      </button>
-                    </div>
-                  </td>
-                </motion.tr>
-              ))}
+              {filtered.map((inv, i) => {
+                const amount = inv.invoiceAmount ?? inv.amount ?? 0;
+                const fraudScore = inv.fraud?.score ?? inv.fraudScore ?? 0;
+                const paymentStatus = inv.paymentStatus ?? inv.status ?? "PENDING";
+                const blockId = inv.blockId ?? inv.blockNumber ?? "—";
+                return (
+                  <motion.tr
+                    key={inv._id || inv.invoiceNumber || i}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: Math.min(i * 0.02, 0.4) }}
+                    className="transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/40"
+                  >
+                    <td className="px-4 py-3 font-semibold text-brand-600 dark:text-brand-400">{inv.invoiceNumber}</td>
+                    <td className="px-4 py-3">{inv.vendor}</td>
+                    <td className="px-4 py-3 text-slate-500 dark:text-slate-400">
+                      {inv.poNumber} / {inv.grnNumber || "—"}
+                    </td>
+                    <td className="px-4 py-3 font-medium">{formatCurrency(amount)}</td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={`font-semibold ${
+                          fraudScore >= 60 ? "text-danger-500" : fraudScore >= 30 ? "text-warning-500" : "text-success-500"
+                        }`}
+                      >
+                        {fraudScore}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <StatusBadge status={inv.status} />
+                    </td>
+                    <td className="px-4 py-3">
+                      <StatusBadge status={paymentStatus} />
+                    </td>
+                    <td className="px-4 py-3">
+                      <BlockLink blockId={blockId} />
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex justify-end gap-1.5">
+                        <button className="btn-ghost !p-1.5" onClick={() => setViewInvoice(inv)} title="View">
+                          <Eye size={15} />
+                        </button>
+                      </div>
+                    </td>
+                  </motion.tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

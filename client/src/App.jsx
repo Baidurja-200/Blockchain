@@ -1,6 +1,7 @@
 import { Routes, Route } from "react-router-dom";
 import DashboardLayout from "./layouts/DashboardLayout";
 import ProtectedRoute from "./components/common/ProtectedRoute";
+import ErrorBoundary from "./components/common/ErrorBoundary";
 
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
@@ -24,7 +25,9 @@ export default function App() {
       <Route
         element={
           <ProtectedRoute>
-            <DashboardLayout />
+            <ErrorBoundary>
+              <DashboardLayout />
+            </ErrorBoundary>
           </ProtectedRoute>
         }
       >

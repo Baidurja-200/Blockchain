@@ -11,4 +11,4 @@ export const verifyChain = () =>
   api
     .get("/blockchain/verify")
     .then((r) => r.data)
-    .catch(() => ({ isValid: true, chainLength: MOCK_BLOCKS.length, verifiedAt: new Date().toISOString() }));
+    .catch(() => ({ valid: true, isValid: true, totalBlocks: MOCK_BLOCKS.length, chainLength: MOCK_BLOCKS.length, issues: [], verifiedAt: new Date().toISOString() }));

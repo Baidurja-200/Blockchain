@@ -86,7 +86,7 @@ export default function SmartContractValidation() {
           >
             {invoices.map((inv) => (
               <option key={inv._id} value={inv._id}>
-                {inv.invoiceNumber} — {inv.vendor} ({formatCurrency(inv.invoiceAmount)})
+                {inv.invoiceNumber} — {inv.vendor} ({formatCurrency(inv.invoiceAmount ?? inv.amount ?? 0)})
               </option>
             ))}
           </select>
