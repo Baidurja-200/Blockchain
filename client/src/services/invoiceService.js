@@ -89,6 +89,7 @@ export const createInvoice = (formData) =>
 
       MOCK_INVOICES.unshift(inv);
       saveMockState();
+      import("./peerSyncService").then(({ broadcastInvoiceUpdatedP2P }) => broadcastInvoiceUpdatedP2P(inv)).catch(() => {});
       import("./firebaseService").then(({ syncInvoiceToFirebase }) => syncInvoiceToFirebase(inv)).catch(() => {});
 
       appendMockBlock("VALIDATION", invoiceNumber, {
@@ -125,6 +126,7 @@ export const decideInvoice = (id, decision) =>
         decision,
         status: decision,
       });
+      import("./peerSyncService").then(({ broadcastInvoiceUpdatedP2P }) => broadcastInvoiceUpdatedP2P(inv)).catch(() => {});
       import("./firebaseService").then(({ syncInvoiceToFirebase }) => syncInvoiceToFirebase(inv)).catch(() => {});
     }
     saveMockState();
@@ -147,6 +149,7 @@ export const payInvoice = (id) =>
         amount: inv.invoiceAmount || inv.amount,
         status: "SETTLED",
       });
+      import("./peerSyncService").then(({ broadcastInvoiceUpdatedP2P }) => broadcastInvoiceUpdatedP2P(inv)).catch(() => {});
       import("./firebaseService").then(({ syncInvoiceToFirebase }) => syncInvoiceToFirebase(inv)).catch(() => {});
     }
     saveMockState();

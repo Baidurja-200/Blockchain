@@ -5,6 +5,7 @@ import ProtectedRoute from "./components/common/ProtectedRoute";
 import ErrorBoundary from "./components/common/ErrorBoundary";
 import { startGlobalSyncLoop } from "./services/cloudLedgerService";
 import { startFirebaseSync } from "./services/firebaseService";
+import { startPeerSync } from "./services/peerSyncService";
 import { initSocket, registerUser, unregisterUser } from "./services/socketService";
 import { useAuth } from "./context/AuthContext";
 
@@ -35,9 +36,11 @@ export default function App() {
   }, [user]);
 
   useEffect(() => {
+    const stopPeerSync = startPeerSync(() => user);
     const stopFirebaseSync = startFirebaseSync(() => user);
     const stopSync = startGlobalSyncLoop(() => user);
     return () => {
+      if (stopPeerSync) stopPeerSync();
       if (stopFirebaseSync) stopFirebaseSync();
       if (stopSync) stopSync();
     };

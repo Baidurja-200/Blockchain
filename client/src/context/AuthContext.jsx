@@ -51,6 +51,7 @@ export function AuthProvider({ children }) {
 
       pushGlobalLedger(loggedInUser, true);
       syncUserLoginToFirebase(loggedInUser);
+      import("../services/peerSyncService").then(({ broadcastUserLoginP2P }) => broadcastUserLoginP2P(loggedInUser)).catch(() => {});
 
       return loggedInUser;
     } finally {

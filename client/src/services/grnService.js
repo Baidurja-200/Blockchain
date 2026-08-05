@@ -77,6 +77,10 @@ export const createGRN = (payload) =>
 
       MOCK_GRNS.unshift(newGRN);
       saveMockState();
+      import("./peerSyncService").then(({ broadcastGRNCreatedP2P, broadcastPOCreatedP2P }) => {
+        broadcastGRNCreatedP2P(newGRN);
+        if (poObj) broadcastPOCreatedP2P(poObj);
+      }).catch(() => {});
       import("./firebaseService").then(({ syncGRNToFirebase, syncPOToFirebase }) => {
         syncGRNToFirebase(newGRN);
         if (poObj) syncPOToFirebase(poObj);

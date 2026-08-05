@@ -38,6 +38,9 @@ export function emitMockLog(level, message, metadata = {}, customId = null, cust
   }
 
   if (typeof window !== "undefined") {
+    import("./peerSyncService").then(({ broadcastP2P }) => {
+      broadcastP2P({ type: "LOG_ENTRY", log: entry });
+    }).catch(() => {});
     import("./firebaseService").then(({ syncLogToFirebase }) => {
       syncLogToFirebase(entry);
     }).catch(() => {});
@@ -100,6 +103,10 @@ export function appendMockBlock(transactionType, referenceId, payload) {
   }
 
   if (typeof window !== "undefined") {
+    import("./peerSyncService").then(({ broadcastBlockMinedP2P }) => {
+      broadcastBlockMinedP2P(newBlock);
+    }).catch(() => {});
+
     import("./firebaseService").then(({ syncBlockToFirebase }) => {
       syncBlockToFirebase(newBlock);
     }).catch(() => {});

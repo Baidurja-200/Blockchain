@@ -47,6 +47,7 @@ export const createPO = (payload) =>
       };
       MOCK_POS.unshift(newPO);
       saveMockState();
+      import("./peerSyncService").then(({ broadcastPOCreatedP2P }) => broadcastPOCreatedP2P(newPO)).catch(() => {});
       import("./firebaseService").then(({ syncPOToFirebase }) => syncPOToFirebase(newPO)).catch(() => {});
       return newPO;
     });
