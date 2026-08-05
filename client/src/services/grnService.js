@@ -1,5 +1,5 @@
 import api from "./api";
-import { MOCK_GRNS } from "./mockData";
+import { MOCK_GRNS, appendMockBlock } from "./mockData";
 
 export const listGRNs = () => api.get("/grns").then((r) => r.data.grns).catch(() => MOCK_GRNS);
 export const createGRN = (payload) =>
@@ -7,16 +7,28 @@ export const createGRN = (payload) =>
     .post("/grns", payload)
     .then((r) => r.data.grn)
     .catch(() => {
+      const grnNumber = "GRN-" + Math.floor(1000 + Math.random() * 9000);
+      const receivedQuantity = Number(payload.receivedQuantity);
+
+      const newBlock = appendMockBlock("GRN", grnNumber, {
+        grnNumber,
+        poNumber: payload.poNumber,
+        receivedQuantity,
+      });
+
       const newGRN = {
         _id: "grn-" + Date.now(),
-        grnNumber: "GRN-" + Math.floor(1000 + Math.random() * 9000),
+        grnNumber,
         poNumber: payload.poNumber,
-        receivedQuantity: Number(payload.receivedQuantity),
+        receivedQuantity,
         receivedDate: new Date().toISOString().split("T")[0],
         receivedBy: "Warehouse Admin",
         remarks: payload.remarks || "Goods received and inspected",
-        blockNumber: 16,
-        blockHash: "0000" + Array(60).fill(0).map(() => Math.floor(Math.random()*16).toString(16)).join(""),
+        blockNumber: newBlock.blockNumber,
+        blockId: newBlock.blockNumber,
+        blockHash: newBlock.hash,
+        txHash: newBlock.hash,
+        blockTimestamp: newBlock.timestamp,
         createdAt: new Date().toISOString(),
       };
       MOCK_GRNS.unshift(newGRN);

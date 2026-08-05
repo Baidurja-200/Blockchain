@@ -146,8 +146,8 @@ export default function PurchaseOrders() {
                   <td className="px-4 py-3">
                     <StatusBadge status={po.status} />
                   </td>
-                  <td className="px-4 py-3">
-                    <BlockLink blockId={po.blockId} />
+              <td className="px-4 py-3">
+                    <BlockLink blockId={po.blockId ?? po.blockNumber} />
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex justify-end gap-1.5">
@@ -281,15 +281,15 @@ export default function PurchaseOrders() {
               </p>
               <div className="space-y-1.5 text-xs">
                 <p className="flex items-center gap-1.5 mono text-slate-500 dark:text-slate-400">
-                  <Hash size={12} /> Block #{viewPO.blockId}
+                  <Hash size={12} /> Block #{viewPO.blockId ?? viewPO.blockNumber ?? "—"}
                 </p>
-                <p className="mono truncate text-slate-500 dark:text-slate-400">{viewPO.txHash}</p>
+                <p className="mono truncate text-slate-500 dark:text-slate-400">{viewPO.txHash ?? viewPO.blockHash ?? "—"}</p>
                 <p className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
-                  <Clock size={12} /> {formatDateTime(viewPO.blockTimestamp)}
+                  <Clock size={12} /> {formatDateTime(viewPO.blockTimestamp ?? viewPO.createdAt)}
                 </p>
               </div>
-              {viewPO.blockId !== null && viewPO.blockId !== undefined && (
-                <Link to={`/blockchain?block=${viewPO.blockId}`} className="btn-secondary mt-3 w-full !py-2 text-xs">
+              {(viewPO.blockId ?? viewPO.blockNumber) !== null && (viewPO.blockId ?? viewPO.blockNumber) !== undefined && (
+                <Link to={`/blockchain?block=${viewPO.blockId ?? viewPO.blockNumber}`} className="btn-secondary mt-3 w-full !py-2 text-xs">
                   <Blocks size={14} /> View this block on the chain
                 </Link>
               )}
@@ -307,16 +307,16 @@ export default function PurchaseOrders() {
               into the blockchain.
             </p>
             <div className="space-y-2 rounded-xl bg-slate-50 p-4 text-xs dark:bg-slate-800/60">
-              <Row label="Timestamp" value={formatDateTime(successPO.blockTimestamp)} />
-              <Row label="Block ID" value={`#${successPO.blockId}`} />
-              <Row label="Hash" value={truncateHash(successPO.txHash, 14)} mono />
+              <Row label="Timestamp" value={formatDateTime(successPO.blockTimestamp ?? successPO.createdAt)} />
+              <Row label="Block ID" value={`#${successPO.blockId ?? successPO.blockNumber}`} />
+              <Row label="Hash" value={truncateHash(successPO.txHash ?? successPO.blockHash, 14)} mono />
             </div>
             <div className="flex gap-2">
               <button className="btn-secondary flex-1" onClick={() => setSuccessPO(null)}>
                 Done
               </button>
-              <Link to={`/blockchain?block=${successPO.blockId}`} className="btn-primary flex-1">
-                <Blocks size={15} /> View block #{successPO.blockId}
+              <Link to={`/blockchain?block=${successPO.blockId ?? successPO.blockNumber}`} className="btn-primary flex-1">
+                <Blocks size={15} /> View block #{successPO.blockId ?? successPO.blockNumber}
               </Link>
             </div>
           </div>

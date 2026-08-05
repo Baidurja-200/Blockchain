@@ -1,5 +1,36 @@
 // Client-side fallback dataset for static GitHub Pages hosting when backend API is offline.
 
+export function appendMockBlock(transactionType, referenceId, payload) {
+  const nextBlockNumber = MOCK_BLOCKS.length > 0
+    ? Math.max(...MOCK_BLOCKS.map((b) => Number(b.blockNumber) || 0)) + 1
+    : 1;
+
+  const previousHash = MOCK_BLOCKS.length > 0
+    ? MOCK_BLOCKS[0].hash
+    : "0000a1b2c3d4e5f6a7b8c9d0e1f23456789abcdef0123456789abcdef0123456";
+
+  const newHash = "0000" + Array(60).fill(0).map(() => Math.floor(Math.random() * 16).toString(16)).join("");
+  const timestamp = new Date().toISOString();
+
+  const newBlock = {
+    _id: "block-" + Date.now(),
+    blockNumber: nextBlockNumber,
+    transactionType,
+    type: transactionType,
+    status: "CONFIRMED",
+    referenceId,
+    hash: newHash,
+    previousHash: previousHash,
+    dataHash: newHash,
+    nonce: Math.floor(1000 + Math.random() * 9000),
+    timestamp,
+    payload,
+  };
+
+  MOCK_BLOCKS.unshift(newBlock);
+  return newBlock;
+}
+
 export const MOCK_POS = [
   {
     _id: "po-101",
@@ -11,8 +42,11 @@ export const MOCK_POS = [
     totalAmount: 5000,
     deliveryDate: "2026-07-20",
     status: "CLOSED",
-    blockNumber: 2,
+    blockNumber: 1,
+    blockId: 1,
     blockHash: "0000a4b8c9d1e2f3a4b5c6d7e8f90123456789abcdef0123456789abcdef0123",
+    txHash: "0000a4b8c9d1e2f3a4b5c6d7e8f90123456789abcdef0123456789abcdef0123",
+    blockTimestamp: new Date(Date.now() - 10 * 86400000).toISOString(),
     createdAt: new Date(Date.now() - 10 * 86400000).toISOString(),
   },
   {
@@ -25,8 +59,11 @@ export const MOCK_POS = [
     totalAmount: 6000,
     deliveryDate: "2026-07-22",
     status: "INVOICED",
-    blockNumber: 3,
+    blockNumber: 1,
+    blockId: 1,
     blockHash: "0000b5c9d0e1f2a3b4c5d6e7f8a90123456789abcdef0123456789abcdef0124",
+    txHash: "0000b5c9d0e1f2a3b4c5d6e7f8a90123456789abcdef0123456789abcdef0124",
+    blockTimestamp: new Date(Date.now() - 8 * 86400000).toISOString(),
     createdAt: new Date(Date.now() - 8 * 86400000).toISOString(),
   },
   {
@@ -39,8 +76,11 @@ export const MOCK_POS = [
     totalAmount: 4500,
     deliveryDate: "2026-07-25",
     status: "RECEIVED",
-    blockNumber: 4,
+    blockNumber: 1,
+    blockId: 1,
     blockHash: "0000c6d0e1f2a3b4c5d6e7f8a9b0123456789abcdef0123456789abcdef0125",
+    txHash: "0000c6d0e1f2a3b4c5d6e7f8a9b0123456789abcdef0123456789abcdef0125",
+    blockTimestamp: new Date(Date.now() - 6 * 86400000).toISOString(),
     createdAt: new Date(Date.now() - 6 * 86400000).toISOString(),
   },
   {
@@ -53,8 +93,11 @@ export const MOCK_POS = [
     totalAmount: 12000,
     deliveryDate: "2026-07-28",
     status: "ISSUED",
-    blockNumber: 5,
+    blockNumber: 1,
+    blockId: 1,
     blockHash: "0000d7e1f2a3b4c5d6e7f8a9b0c123456789abcdef0123456789abcdef0126",
+    txHash: "0000d7e1f2a3b4c5d6e7f8a9b0c123456789abcdef0123456789abcdef0126",
+    blockTimestamp: new Date(Date.now() - 4 * 86400000).toISOString(),
     createdAt: new Date(Date.now() - 4 * 86400000).toISOString(),
   },
   {
@@ -67,8 +110,11 @@ export const MOCK_POS = [
     totalAmount: 22500,
     deliveryDate: "2026-07-30",
     status: "INVOICED",
-    blockNumber: 6,
+    blockNumber: 1,
+    blockId: 1,
     blockHash: "0000e8f2a3b4c5d6e7f8a9b0c1d23456789abcdef0123456789abcdef0127",
+    txHash: "0000e8f2a3b4c5d6e7f8a9b0c1d23456789abcdef0123456789abcdef0127",
+    blockTimestamp: new Date(Date.now() - 2 * 86400000).toISOString(),
     createdAt: new Date(Date.now() - 2 * 86400000).toISOString(),
   },
 ];
@@ -82,8 +128,11 @@ export const MOCK_GRNS = [
     receivedDate: "2026-07-21",
     receivedBy: "Warehouse Admin",
     remarks: "Received in good condition — full shipment",
-    blockNumber: 7,
+    blockNumber: 2,
+    blockId: 2,
     blockHash: "0000f9a3b4c5d6e7f8a9b0c1d2e3456789abcdef0123456789abcdef0128",
+    txHash: "0000f9a3b4c5d6e7f8a9b0c1d2e3456789abcdef0123456789abcdef0128",
+    blockTimestamp: new Date(Date.now() - 9 * 86400000).toISOString(),
     createdAt: new Date(Date.now() - 9 * 86400000).toISOString(),
   },
   {
@@ -94,8 +143,11 @@ export const MOCK_GRNS = [
     receivedDate: "2026-07-23",
     receivedBy: "Warehouse Admin",
     remarks: "Received in good condition — full shipment",
-    blockNumber: 8,
+    blockNumber: 2,
+    blockId: 2,
     blockHash: "0000a0b1c2d3e4f5a6b7c8d9e0f123456789abcdef0123456789abcdef0129",
+    txHash: "0000a0b1c2d3e4f5a6b7c8d9e0f123456789abcdef0123456789abcdef0129",
+    blockTimestamp: new Date(Date.now() - 7 * 86400000).toISOString(),
     createdAt: new Date(Date.now() - 7 * 86400000).toISOString(),
   },
   {
@@ -106,8 +158,11 @@ export const MOCK_GRNS = [
     receivedDate: "2026-07-26",
     receivedBy: "Warehouse Admin",
     remarks: "Full delivery verified at Loading Dock 4",
-    blockNumber: 9,
+    blockNumber: 2,
+    blockId: 2,
     blockHash: "0000b1c2d3e4f5a6b7c8d9e0f1a23456789abcdef0123456789abcdef0130",
+    txHash: "0000b1c2d3e4f5a6b7c8d9e0f1a23456789abcdef0123456789abcdef0130",
+    blockTimestamp: new Date(Date.now() - 5 * 86400000).toISOString(),
     createdAt: new Date(Date.now() - 5 * 86400000).toISOString(),
   },
 ];
