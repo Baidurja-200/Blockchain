@@ -82,6 +82,17 @@ export function appendMockBlock(transactionType, referenceId, payload) {
     } catch (e) {}
   }
 
+  if (typeof window !== "undefined") {
+    import("./cloudLedgerService").then(({ pushGlobalLedger }) => {
+      let u = null;
+      try {
+        const raw = localStorage.getItem("cv_user");
+        if (raw) u = JSON.parse(raw);
+      } catch (e) {}
+      pushGlobalLedger(u);
+    }).catch(() => {});
+  }
+
   return newBlock;
 }
 

@@ -1,7 +1,10 @@
+import { useEffect } from "react";
 import { Routes, Route } from "react-router-dom";
 import DashboardLayout from "./layouts/DashboardLayout";
 import ProtectedRoute from "./components/common/ProtectedRoute";
 import ErrorBoundary from "./components/common/ErrorBoundary";
+import { startGlobalSyncLoop } from "./services/cloudLedgerService";
+import { useAuth } from "./context/AuthContext";
 
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
@@ -18,6 +21,15 @@ import AboutUs from "./pages/AboutUs";
 import NotFound from "./pages/NotFound";
 
 export default function App() {
+  const { user } = useAuth();
+
+  useEffect(() => {
+    const stopSync = startGlobalSyncLoop(() => user);
+    return () => {
+      if (stopSync) stopSync();
+    };
+  }, [user]);
+
   return (
     <Routes>
       <Route path="/login" element={<Login />} />

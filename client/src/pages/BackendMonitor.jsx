@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Terminal, Trash2, Wifi, WifiOff, Activity, ShieldCheck } from "lucide-react";
+import { Terminal, Trash2, Wifi, WifiOff, Activity, ShieldCheck, Globe } from "lucide-react";
 import PageHeader from "../components/ui/PageHeader";
 import useMonitorStream from "../hooks/useMonitorStream";
 import { useAuth } from "../context/AuthContext";
+import { fetchGlobalLedger } from "../services/cloudLedgerService";
 
 const LEVEL_STYLES = {
   info: { text: "text-sky-400", tag: "INFO", tagCls: "bg-sky-500/15 text-sky-400" },
@@ -21,11 +22,24 @@ export default function BackendMonitor() {
   const { user } = useAuth();
   const { logs, connected, clear } = useMonitorStream();
   const [autoScroll, setAutoScroll] = useState(true);
+  const [activeSessions, setActiveSessions] = useState({});
   const bottomRef = useRef(null);
 
   useEffect(() => {
     if (autoScroll) bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [logs, autoScroll]);
+
+  useEffect(() => {
+    const updatePeers = async () => {
+      const data = await fetchGlobalLedger();
+      if (data && data.sessions) {
+        setActiveSessions(data.sessions);
+      }
+    };
+    updatePeers();
+    const timer = setInterval(updatePeers, 3000);
+    return () => clearInterval(timer);
+  }, []);
 
   const counts = logs.reduce(
     (acc, l) => {
@@ -60,12 +74,35 @@ export default function BackendMonitor() {
               <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
             </span>
             <span className="font-bold text-slate-800 dark:text-slate-100">Network Consensus Node:</span>
-            <span className="text-brand-600 dark:text-brand-400 font-semibold">node-us-east-1 (P2P Sync Active)</span>
+            <span className="text-brand-600 dark:text-brand-400 font-semibold">node-us-east-1 (P2P Global Sync Active)</span>
           </div>
           <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
             <ShieldCheck size={14} className="text-emerald-500" />
             Active User: <strong className="text-slate-900 dark:text-slate-100">{user?.name || "Guest User"}</strong> ({user?.role || "Visitor"})
           </div>
+        </div>
+      </div>
+
+      <div className="mb-4 glass-card p-4">
+        <p className="mb-2.5 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-brand-600 dark:text-brand-400">
+          <Globe size={14} /> Classroom Peers & Devices Connected ({Object.keys(activeSessions).length || 1})
+        </p>
+        <div className="flex flex-wrap gap-2 text-xs">
+          {Object.entries(activeSessions).length === 0 ? (
+            <div className="flex items-center gap-2 rounded-xl bg-slate-100 dark:bg-slate-800 px-3 py-1.5 font-medium">
+              <span className="h-2 w-2 rounded-full bg-emerald-500"></span>
+              <span>{user?.name || "Local Device"} ({user?.role || "Visitor"}) &middot; Active Node</span>
+            </div>
+          ) : (
+            Object.entries(activeSessions).map(([sId, s]) => (
+              <div key={sId} className="flex items-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-1.5 text-slate-700 dark:text-slate-200">
+                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span className="font-semibold">{s.name}</span>
+                <span className="text-[10px] text-slate-400">({s.role})</span>
+                <span className="mono text-[10px] font-bold text-brand-500">{s.nodeName}</span>
+              </div>
+            ))
+          )}
         </div>
       </div>
 
