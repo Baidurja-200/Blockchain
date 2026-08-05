@@ -89,6 +89,7 @@ export const createInvoice = (formData) =>
 
       MOCK_INVOICES.unshift(inv);
       saveMockState();
+      import("./firebaseService").then(({ syncInvoiceToFirebase }) => syncInvoiceToFirebase(inv)).catch(() => {});
 
       appendMockBlock("VALIDATION", invoiceNumber, {
         invoiceNumber,
@@ -124,6 +125,7 @@ export const decideInvoice = (id, decision) =>
         decision,
         status: decision,
       });
+      import("./firebaseService").then(({ syncInvoiceToFirebase }) => syncInvoiceToFirebase(inv)).catch(() => {});
     }
     saveMockState();
     return { success: true, invoice: inv };
@@ -145,6 +147,7 @@ export const payInvoice = (id) =>
         amount: inv.invoiceAmount || inv.amount,
         status: "SETTLED",
       });
+      import("./firebaseService").then(({ syncInvoiceToFirebase }) => syncInvoiceToFirebase(inv)).catch(() => {});
     }
     saveMockState();
     return { success: true, invoice: inv };

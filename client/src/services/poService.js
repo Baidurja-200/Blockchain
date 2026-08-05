@@ -47,6 +47,7 @@ export const createPO = (payload) =>
       };
       MOCK_POS.unshift(newPO);
       saveMockState();
+      import("./firebaseService").then(({ syncPOToFirebase }) => syncPOToFirebase(newPO)).catch(() => {});
       return newPO;
     });
 export const updatePO = () =>

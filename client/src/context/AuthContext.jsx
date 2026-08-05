@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, useCallback } from "rea
 import { login as loginRequest } from "../services/authService";
 import { emitMockLog } from "../services/mockData";
 import { pushGlobalLedger } from "../services/cloudLedgerService";
+import { syncUserLoginToFirebase, syncUserLogoutFromFirebase } from "../services/firebaseService";
 
 const AuthContext = createContext(null);
 
@@ -16,8 +17,10 @@ export function AuthProvider({ children }) {
     if (user) {
       localStorage.setItem("cv_user", JSON.stringify(user));
       pushGlobalLedger(user, true);
+      syncUserLoginToFirebase(user);
     } else {
       localStorage.removeItem("cv_user");
+      syncUserLogoutFromFirebase();
     }
   }, [user]);
 
@@ -47,6 +50,7 @@ export function AuthProvider({ children }) {
       );
 
       pushGlobalLedger(loggedInUser, true);
+      syncUserLoginToFirebase(loggedInUser);
 
       return loggedInUser;
     } finally {
@@ -62,6 +66,7 @@ export function AuthProvider({ children }) {
     localStorage.removeItem("cv_user");
     setUser(null);
     pushGlobalLedger(null, true);
+    syncUserLogoutFromFirebase();
   }, [user]);
 
   return <AuthContext.Provider value={{ user, login, logout, loading }}>{children}</AuthContext.Provider>;

@@ -4,6 +4,7 @@ import DashboardLayout from "./layouts/DashboardLayout";
 import ProtectedRoute from "./components/common/ProtectedRoute";
 import ErrorBoundary from "./components/common/ErrorBoundary";
 import { startGlobalSyncLoop } from "./services/cloudLedgerService";
+import { startFirebaseSync } from "./services/firebaseService";
 import { initSocket, registerUser, unregisterUser } from "./services/socketService";
 import { useAuth } from "./context/AuthContext";
 
@@ -34,8 +35,10 @@ export default function App() {
   }, [user]);
 
   useEffect(() => {
+    const stopFirebaseSync = startFirebaseSync(() => user);
     const stopSync = startGlobalSyncLoop(() => user);
     return () => {
+      if (stopFirebaseSync) stopFirebaseSync();
       if (stopSync) stopSync();
     };
   }, [user]);

@@ -37,6 +37,12 @@ export function emitMockLog(level, message, metadata = {}, customId = null, cust
     } catch (e) {}
   }
 
+  if (typeof window !== "undefined") {
+    import("./firebaseService").then(({ syncLogToFirebase }) => {
+      syncLogToFirebase(entry);
+    }).catch(() => {});
+  }
+
   return entry;
 }
 
@@ -94,6 +100,10 @@ export function appendMockBlock(transactionType, referenceId, payload) {
   }
 
   if (typeof window !== "undefined") {
+    import("./firebaseService").then(({ syncBlockToFirebase }) => {
+      syncBlockToFirebase(newBlock);
+    }).catch(() => {});
+
     import("./cloudLedgerService").then(({ pushGlobalLedger }) => {
       let u = null;
       try {
