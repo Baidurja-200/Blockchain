@@ -1,5 +1,5 @@
 import api from "./api";
-import { MOCK_GRNS, MOCK_POS, appendMockBlock } from "./mockData";
+import { MOCK_GRNS, MOCK_POS, appendMockBlock, saveMockState } from "./mockData";
 
 export const listGRNs = () => api.get("/grns").then((r) => r.data.grns).catch(() => MOCK_GRNS);
 export const createGRN = (payload) =>
@@ -76,5 +76,6 @@ export const createGRN = (payload) =>
       }
 
       MOCK_GRNS.unshift(newGRN);
+      saveMockState();
       return newGRN;
     });

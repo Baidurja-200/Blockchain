@@ -1,5 +1,5 @@
 import api from "./api";
-import { MOCK_INVOICES, MOCK_POS, MOCK_GRNS, appendMockBlock } from "./mockData";
+import { MOCK_INVOICES, MOCK_POS, MOCK_GRNS, appendMockBlock, saveMockState } from "./mockData";
 
 export const listInvoices = () => api.get("/invoices").then((r) => r.data.invoices).catch(() => MOCK_INVOICES);
 export const getInvoice = (id) => api.get(`/invoices/${id}`).then((r) => r.data.invoice).catch(() => MOCK_INVOICES.find(i => i._id === id) || MOCK_INVOICES[0]);
@@ -88,6 +88,7 @@ export const createInvoice = (formData) =>
       };
 
       MOCK_INVOICES.unshift(inv);
+      saveMockState();
 
       appendMockBlock("VALIDATION", invoiceNumber, {
         invoiceNumber,
@@ -124,6 +125,7 @@ export const decideInvoice = (id, decision) =>
         status: decision,
       });
     }
+    saveMockState();
     return { success: true, invoice: inv };
   });
 
@@ -144,5 +146,6 @@ export const payInvoice = (id) =>
         status: "SETTLED",
       });
     }
+    saveMockState();
     return { success: true, invoice: inv };
   });

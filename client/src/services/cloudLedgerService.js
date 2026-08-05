@@ -165,12 +165,16 @@ export function startGlobalSyncLoop(getCurrentUser) {
         MOCK_BLOCKS.sort((a, b) => (Number(b.blockNumber) || 0) - (Number(a.blockNumber) || 0));
       }
 
-      // Merge POs
+      // Merge POs (insert new + update existing status changes)
       if (Array.isArray(cloud.pos)) {
-        const existingPOs = new Set(MOCK_POS.map((p) => p.poNumber));
+        const localPOMap = new Map(MOCK_POS.map((p) => [p.poNumber, p]));
         cloud.pos.forEach((p) => {
-          if (!existingPOs.has(p.poNumber)) {
+          const local = localPOMap.get(p.poNumber);
+          if (!local) {
             MOCK_POS.unshift(p);
+            hasChanges = true;
+          } else if (local.status !== p.status) {
+            Object.assign(local, p);
             hasChanges = true;
           }
         });
@@ -178,21 +182,25 @@ export function startGlobalSyncLoop(getCurrentUser) {
 
       // Merge GRNs
       if (Array.isArray(cloud.grns)) {
-        const existingGRNs = new Set(MOCK_GRNS.map((g) => g.grnNumber));
+        const localGRNMap = new Map(MOCK_GRNS.map((g) => [g.grnNumber, g]));
         cloud.grns.forEach((g) => {
-          if (!existingGRNs.has(g.grnNumber)) {
+          if (!localGRNMap.has(g.grnNumber)) {
             MOCK_GRNS.unshift(g);
             hasChanges = true;
           }
         });
       }
 
-      // Merge Invoices
+      // Merge Invoices (insert new + update status/payment changes)
       if (Array.isArray(cloud.invoices)) {
-        const existingInvoices = new Set(MOCK_INVOICES.map((i) => i.invoiceNumber));
+        const localInvMap = new Map(MOCK_INVOICES.map((i) => [i.invoiceNumber, i]));
         cloud.invoices.forEach((i) => {
-          if (!existingInvoices.has(i.invoiceNumber)) {
+          const local = localInvMap.get(i.invoiceNumber);
+          if (!local) {
             MOCK_INVOICES.unshift(i);
+            hasChanges = true;
+          } else if (local.status !== i.status || local.paymentStatus !== i.paymentStatus) {
+            Object.assign(local, i);
             hasChanges = true;
           }
         });
