@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Plus, Eye, Pencil, FileText, Hash, Clock, Boxes, Blocks } from "lucide-react";
+import { Plus, Eye, FileText, Hash, Clock, Boxes, Blocks, Lock } from "lucide-react";
 import PageHeader from "../components/ui/PageHeader";
 import Loader from "../components/ui/Loader";
 import EmptyState from "../components/ui/EmptyState";
@@ -9,7 +9,7 @@ import StatusBadge from "../components/ui/StatusBadge";
 import Modal from "../components/ui/Modal";
 import RoleNotice from "../components/ui/RoleNotice";
 import BlockLink from "../components/ui/BlockLink";
-import { listPOs, createPO, updatePO } from "../services/poService";
+import { listPOs, createPO } from "../services/poService";
 import { formatCurrency, formatDate, formatDateTime, truncateHash } from "../utils/format";
 import { useAuth } from "../context/AuthContext";
 
@@ -22,7 +22,6 @@ export default function PurchaseOrders() {
   const [loading, setLoading] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
   const [viewPO, setViewPO] = useState(null);
-  const [editPO, setEditPO] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
   const [successPO, setSuccessPO] = useState(null);
@@ -56,34 +55,6 @@ export default function PurchaseOrders() {
     }
   };
 
-  const openEdit = (po) => {
-    setEditPO(po);
-    setForm({
-      vendor: po.vendor,
-      product: po.product,
-      quantity: po.quantity,
-      unitPrice: po.unitPrice,
-      deliveryDate: po.deliveryDate.slice(0, 10),
-      status: po.status,
-    });
-  };
-
-  const handleUpdate = async (e) => {
-    e.preventDefault();
-    setSubmitting(true);
-    setError("");
-    try {
-      const updated = await updatePO(editPO._id, form);
-      setPOs((prev) => prev.map((p) => (p._id === updated._id ? updated : p)));
-      setEditPO(null);
-      setForm(EMPTY_FORM);
-    } catch (err) {
-      setError(err.response?.data?.message || "Failed to update purchase order");
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
   return (
     <div>
       <PageHeader
@@ -104,7 +75,14 @@ export default function PurchaseOrders() {
         }
       />
 
-      {!canManage && <RoleNotice role={user?.role} allowedRole="Procurement Officer" capability="create or edit purchase orders" />}
+      <div className="mb-4 flex items-center gap-2.5 rounded-2xl border border-brand-500/20 bg-brand-500/5 p-3.5 text-xs text-brand-600 dark:text-brand-300">
+        <Lock size={16} className="shrink-0 text-brand-500" />
+        <span>
+          <strong>Immutable Ledger Protection:</strong> Once recorded on the blockchain, purchase orders, goods receipts, and invoices are permanently anchored and cannot be edited or modified. To make corrections, issue a new PO or amendment.
+        </span>
+      </div>
+
+      {!canManage && <RoleNotice role={user?.role} allowedRole="Procurement Officer" capability="create purchase orders" />}
 
       {loading ? (
         <Loader label="Loading purchase orders..." />
@@ -122,7 +100,7 @@ export default function PurchaseOrders() {
                 <th className="px-4 py-3 font-semibold">Product</th>
                 <th className="px-4 py-3 font-semibold">Qty</th>
                 <th className="px-4 py-3 font-semibold">Total</th>
-                <th className="px-4 py-3 font-semibold">Delivery</th>
+                <th className="px-4 py-3 font-semibold">Delivery Date</th>
                 <th className="px-4 py-3 font-semibold">Status</th>
                 <th className="px-4 py-3 font-semibold">Block</th>
                 <th className="px-4 py-3 font-semibold text-right">Actions</th>
@@ -131,7 +109,7 @@ export default function PurchaseOrders() {
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {pos.map((po, i) => (
                 <motion.tr
-                  key={po._id}
+                  key={po._id || po.poNumber || i}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: Math.min(i * 0.02, 0.4) }}
@@ -146,7 +124,7 @@ export default function PurchaseOrders() {
                   <td className="px-4 py-3">
                     <StatusBadge status={po.status} />
                   </td>
-              <td className="px-4 py-3">
+                  <td className="px-4 py-3">
                     <BlockLink blockId={po.blockId ?? po.blockNumber} />
                   </td>
                   <td className="px-4 py-3">
@@ -154,11 +132,6 @@ export default function PurchaseOrders() {
                       <button className="btn-ghost !p-1.5" onClick={() => setViewPO(po)} title="View">
                         <Eye size={15} />
                       </button>
-                      {canManage && (
-                        <button className="btn-ghost !p-1.5" onClick={() => openEdit(po)} title="Edit">
-                          <Pencil size={15} />
-                        </button>
-                      )}
                     </div>
                   </td>
                 </motion.tr>
@@ -206,55 +179,6 @@ export default function PurchaseOrders() {
             </button>
             <button type="submit" disabled={submitting} className="btn-primary">
               {submitting ? "Anchoring on-chain..." : "Create & Anchor on Chain"}
-            </button>
-          </div>
-        </form>
-      </Modal>
-
-      {/* Edit PO Modal */}
-      <Modal open={Boolean(editPO)} onClose={() => setEditPO(null)} title={`Edit ${editPO?.poNumber || ""}`}>
-        <form onSubmit={handleUpdate} className="space-y-4">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div>
-              <label className="field-label">Vendor</label>
-              <input required className="input-field" value={form.vendor} onChange={(e) => setForm({ ...form, vendor: e.target.value })} />
-            </div>
-            <div>
-              <label className="field-label">Product</label>
-              <input required className="input-field" value={form.product} onChange={(e) => setForm({ ...form, product: e.target.value })} />
-            </div>
-            <div>
-              <label className="field-label">Quantity</label>
-              <input required type="number" min="1" className="input-field" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} />
-            </div>
-            <div>
-              <label className="field-label">Unit Price ($)</label>
-              <input required type="number" min="0" step="0.01" className="input-field" value={form.unitPrice} onChange={(e) => setForm({ ...form, unitPrice: e.target.value })} />
-            </div>
-            <div>
-              <label className="field-label">Delivery Date</label>
-              <input required type="date" className="input-field" value={form.deliveryDate} onChange={(e) => setForm({ ...form, deliveryDate: e.target.value })} />
-            </div>
-            <div>
-              <label className="field-label">Status</label>
-              <select className="input-field" value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
-                {["Open", "Partially Received", "Closed", "Cancelled"].map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {error && <p className="text-sm font-medium text-danger-500">{error}</p>}
-
-          <div className="flex justify-end gap-2 pt-2">
-            <button type="button" className="btn-secondary" onClick={() => setEditPO(null)}>
-              Cancel
-            </button>
-            <button type="submit" disabled={submitting} className="btn-primary">
-              {submitting ? "Saving..." : "Save Changes"}
             </button>
           </div>
         </form>

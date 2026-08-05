@@ -43,12 +43,5 @@ export const createPO = (payload) =>
       MOCK_POS.unshift(newPO);
       return newPO;
     });
-export const updatePO = (id, payload) =>
-  api
-    .put(`/purchase-orders/${id}`, payload)
-    .then((r) => r.data.purchaseOrder)
-    .catch(() => {
-      const po = MOCK_POS.find((p) => p._id === id);
-      if (po) Object.assign(po, payload);
-      return po || MOCK_POS[0];
-    });
+export const updatePO = () =>
+  Promise.reject(new Error("Blockchain Immutability Error: Records anchored on the blockchain cannot be edited or modified. To make a correction, issue a new purchase order."));

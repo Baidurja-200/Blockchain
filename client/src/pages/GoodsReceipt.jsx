@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Plus, PackageCheck, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { Plus, PackageCheck, AlertTriangle, CheckCircle2, Lock } from "lucide-react";
 import PageHeader from "../components/ui/PageHeader";
 import Loader from "../components/ui/Loader";
 import EmptyState from "../components/ui/EmptyState";
@@ -79,6 +79,13 @@ export default function GoodsReceipt() {
           )
         }
       />
+
+      <div className="mb-4 flex items-center gap-2.5 rounded-2xl border border-brand-500/20 bg-brand-500/5 p-3.5 text-xs text-brand-600 dark:text-brand-300">
+        <Lock size={16} className="shrink-0 text-brand-500" />
+        <span>
+          <strong>Immutable Ledger Protection:</strong> Goods Receipt Notes are permanently recorded on-chain once submitted and cannot be edited. Corrections require generating a new GRN entry.
+        </span>
+      </div>
 
       {!canManage && <RoleNotice role={user?.role} allowedRole="Warehouse Officer" capability="record goods receipts" />}
 

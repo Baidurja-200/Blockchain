@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Upload, Receipt, CheckCircle2, XCircle, Wallet, Eye, FileUp } from "lucide-react";
+import { Upload, Receipt, CheckCircle2, XCircle, Wallet, Eye, FileUp, Lock } from "lucide-react";
 import PageHeader from "../components/ui/PageHeader";
 import Loader from "../components/ui/Loader";
 import EmptyState from "../components/ui/EmptyState";
@@ -105,6 +105,13 @@ export default function Invoices() {
           )
         }
       />
+
+      <div className="mb-4 flex items-center gap-2.5 rounded-2xl border border-brand-500/20 bg-brand-500/5 p-3.5 text-xs text-brand-600 dark:text-brand-300">
+        <Lock size={16} className="shrink-0 text-brand-500" />
+        <span>
+          <strong>Immutable Ledger Protection:</strong> Submitted vendor invoices are permanently anchored into blockchain blocks. Once submitted, records cannot be edited or modified.
+        </span>
+      </div>
 
       {!canUpload && !canDecide && (
         <RoleNotice role={user?.role} allowedRole="Vendor / Finance Officer" capability="upload, approve, reject, or pay invoices" />
